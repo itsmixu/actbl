@@ -4,7 +4,8 @@
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo start",
+    "android:emulator": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
