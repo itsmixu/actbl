@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>actbl - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Newsreader:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dark": "#1c1b19",
+                        "text-dark-primary": "#ede9df",
+                        "error-crimson": "#b53333",
+                        "tertiary-fixed-dim": "#6cd7d8",
+                        "on-surface-variant": "#56423c",
+                        "surface-container": "#fdeae4",
+                        "border-cream": "#f0eee6",
+                        "olive-gray": "#5e5d59",
+                        "on-tertiary-fixed": "#002020",
+                        "focus-blue": "#3898ec",
+                        "coral-accent": "#d97757",
+                        "secondary-fixed-dim": "#c8c7bd",
+                        "secondary": "#5f5f57",
+                        "outline-variant": "#dcc1b8",
+                        "tertiary-fixed": "#89f4f4",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#392e2b",
+                        "warm-sand": "#e8e6dc",
+                        "surface-dim": "#e9d6d1",
+                        "brand-dark": "#d4693e",
+                        "primary-fixed": "#ffdbd0",
+                        "on-secondary-container": "#65655d",
+                        "error": "#ba1a1a",
+                        "primary-container": "#b95837",
+                        "ivory-surface": "#faf9f5",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fff8f6",
+                        "on-tertiary-container": "#f3fffe",
+                        "error-container": "#ffdad6",
+                        "primary": "#9a4021",
+                        "on-primary-fixed-variant": "#7e2c0e",
+                        "surface-container-high": "#f7e4df",
+                        "background": "#fff8f6",
+                        "on-primary-fixed": "#390b00",
+                        "surface-tint": "#9d4324",
+                        "on-surface": "#231916",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#fff1ed",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#e5e3d9",
+                        "charcoal-warm": "#4d4c48",
+                        "on-primary-container": "#fffbff",
+                        "surface-bright": "#fff8f6",
+                        "tertiary": "#006768",
+                        "outline": "#89726b",
+                        "inverse-primary": "#ffb59d",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#474740",
+                        "inverse-on-surface": "#ffede8",
+                        "secondary-container": "#e5e3d9",
+                        "bg-dark": "#141413",
+                        "on-tertiary-fixed-variant": "#004f50",
+                        "tertiary-container": "#008283",
+                        "near-black-text": "#141413",
+                        "terracotta-brand": "#c96442",
+                        "on-background": "#231916",
+                        "primary-fixed-dim": "#ffb59d",
+                        "stone-gray": "#87867f",
+                        "on-secondary-fixed": "#1b1c16",
+                        "surface-variant": "#f1dfd9",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#f1dfd9",
+                        "parchment-bg": "#f5f4ed"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "24": "24px",
+                        "16": "16px",
+                        "card-padding": "24px",
+                        "section-gap-md": "80px",
+                        "30": "30px",
+                        "20": "20px",
+                        "10": "10px",
+                        "3": "3px",
+                        "base": "8px",
+                        "8": "8px",
+                        "4": "4px",
+                        "section-gap-lg": "120px",
+                        "6": "6px",
+                        "12": "12px"
+                    },
+                    "fontFamily": {
+                        "label": ["Inter"],
+                        "body-ui-bold": ["Inter"],
+                        "sub-heading-lg": ["Newsreader"],
+                        "body-large": ["Inter"],
+                        "display-hero": ["Newsreader"],
+                        "sub-heading": ["Newsreader"],
+                        "feature-title": ["Newsreader"],
+                        "section-heading": ["Newsreader"],
+                        "overline": ["Inter"],
+                        "body-standard": ["Inter"],
+                        "caption": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label": ["12px", { "lineHeight": "1.30", "letterSpacing": "0.12px", "fontWeight": "500" }],
+                        "body-ui-bold": ["16px", { "lineHeight": "1.25", "fontWeight": "500" }],
+                        "sub-heading-lg": ["36px", { "lineHeight": "1.30", "fontWeight": "500" }],
+                        "body-large": ["20px", { "lineHeight": "1.60", "fontWeight": "400" }],
+                        "display-hero": ["64px", { "lineHeight": "1.10", "fontWeight": "500" }],
+                        "sub-heading": ["32px", { "lineHeight": "1.10", "fontWeight": "500" }],
+                        "feature-title": ["20.8px", { "lineHeight": "1.20", "fontWeight": "500" }],
+                        "section-heading": ["52px", { "lineHeight": "1.20", "fontWeight": "500" }],
+                        "overline": ["10px", { "lineHeight": "1.60", "letterSpacing": "0.5px", "fontWeight": "400" }],
+                        "body-standard": ["16px", { "lineHeight": "1.60", "fontWeight": "400" }],
+                        "caption": ["14px", { "lineHeight": "1.43", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-parchment-bg text-on-surface font-body-standard min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-40 bg-parchment-bg dark:bg-surface-dark border-b border-border-cream dark:border-on-surface-variant flex justify-between items-center py-4 max-w-[1200px] mx-auto px-10">
+<div class="font-section-heading text-sub-heading-lg text-terracotta-brand dark:text-brand-dark flex-1 text-center">
+            actbl.</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-[1200px] mx-auto pt-16 pb-32 flex flex-col items-center px-10">
+<!-- Greeting -->
+<section class="w-full max-w-2xl mb-section-gap-md text-center">
+<h1 class="font-display-hero text-display-hero text-near-black-text mb-4">Good morning, Alex.</h1>
+<p class="font-body-large text-body-large text-olive-gray">Let's make this week count.</p>
+</section>
+<!-- Tasks Section -->
+<section class="w-full max-w-2xl flex flex-col gap-16 mb-section-gap-lg items-center">
+<div class="flex flex-col gap-4">
+<h2 class="font-sub-heading text-sub-heading text-near-black-text pb-4 border-b border-border-cream text-center w-full">Your Tasks</h2>
+<!-- Task Card 1 (Done) -->
+<div class="bg-ivory-surface border border-border-cream p-card-padding flex items-start gap-16 shadow-[0px_0px_0px_1px_rgba(240,238,230,1)] transition-all hover:bg-white group cursor-pointer relative overflow-hidden rounded-[32px]">
+<div class="absolute top-0 left-0 w-1 h-full bg-terracotta-brand opacity-100"></div>
+<div class="pt-1">
+<input checked="" class="w-6 h-6 rounded-md border-terracotta-brand text-terracotta-brand focus:ring-focus-blue bg-white transition-colors cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex-1 flex flex-col gap-4">
+<h3 class="font-feature-title text-feature-title text-near-black-text line-through opacity-60">Morning Run (5k)</h3>
+<p class="font-body-standard text-body-standard text-olive-gray opacity-60">Complete before 8 AM. Focus on steady pace.</p>
+</div>
+</div>
+<!-- Task Card 2 (Pending) -->
+<div class="bg-ivory-surface border border-border-cream p-card-padding flex items-start gap-16 shadow-[0px_0px_0px_1px_rgba(240,238,230,1)] transition-all hover:bg-white group cursor-pointer hover:shadow-[0px_0px_0px_1px_rgba(201,100,66,0.3)] rounded-[32px]">
+<div class="pt-1">
+<input class="w-6 h-6 rounded-md border-olive-gray text-terracotta-brand focus:ring-focus-blue bg-white transition-colors cursor-pointer group-hover:border-terracotta-brand" type="checkbox"/>
+</div>
+<div class="flex-1 flex flex-col gap-4">
+<h3 class="font-feature-title text-feature-title text-near-black-text">Read 20 Pages</h3>
+<p class="font-body-standard text-body-standard text-olive-gray">Continue "Deep Work" by Cal Newport.</p>
+</div>
+</div>
+<!-- Task Card 3 (Pending) -->
+<div class="bg-ivory-surface border border-border-cream p-card-padding flex items-start gap-16 shadow-[0px_0px_0px_1px_rgba(240,238,230,1)] transition-all hover:bg-white group cursor-pointer hover:shadow-[0px_0px_0px_1px_rgba(201,100,66,0.3)] rounded-[32px]">
+<div class="pt-1">
+<input class="w-6 h-6 rounded-md border-olive-gray text-terracotta-brand focus:ring-focus-blue bg-white transition-colors cursor-pointer group-hover:border-terracotta-brand" type="checkbox"/>
+</div>
+<div class="flex-1 flex flex-col gap-4">
+<h3 class="font-feature-title text-feature-title text-near-black-text">Project Proposal Outline</h3>
+<p class="font-body-standard text-body-standard text-olive-gray">Draft the main sections for the Q3 initiative.</p>
+</div>
+</div><div class="flex justify-center mt-12 w-full"><button class="bg-terracotta-brand text-white rounded-full flex items-center justify-center shadow-lg hover:bg-brand-dark transition-all transform hover:scale-105 w-14 h-14"><span class="material-symbols-outlined" style="font-size: 32px;">add</span></button></div>
+</div>
+<!-- Add Task Button -->
+</section>
+<!-- Friends Progress Section -->
+<section class="w-full max-w-2xl flex flex-col gap-16">
+<h2 class="font-sub-heading text-sub-heading text-near-black-text pb-4 border-b border-border-cream text-center">Friend's Progress</h2>
+<div class="flex flex-col gap-12">
+<!-- Friend Row 1 -->
+<div class="bg-ivory-surface border border-border-cream p-16 flex justify-between shadow-[0px_0px_0px_1px_rgba(240,238,230,1)] hover:bg-white transition-colors flex-col rounded-[32px]"><div class="flex items-center justify-between mb-12">
+<div class="flex items-center gap-12">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-body-ui-bold text-body-ui-bold">S</div>
+<div class="flex flex-col">
+<span class="font-body-ui-bold text-body-ui-bold text-near-black-text">Sarah J.</span>
+<span class="font-caption text-caption text-olive-gray">2/3 Tasks Complete</span>
+</div>
+</div>
+<button class="bg-terracotta-brand text-on-primary font-label text-label py-8 pl-12 pr-16 flex items-center gap-6 hover:bg-brand-dark transition-colors shadow-[0px_0px_0px_1px_rgba(201,100,66,1)] rounded-xl">
+<span class="material-symbols-outlined text-[16px]" data-icon="notifications_active">notifications_active</span>Poke
+</button>
+</div>
+<ul class="space-y-6 mt-12 border-t border-border-cream pt-12">
+<li class="flex items-center gap-8 opacity-60 line-through text-caption text-olive-gray">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>Morning Workout
+</li>
+<li class="flex items-center gap-8 opacity-60 line-through text-caption text-olive-gray">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>Call Mom
+</li>
+<li class="flex items-center gap-8 text-caption text-near-black-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>Finish Report
+</li>
+</ul></div>
+<!-- Friend Row 2 -->
+<div class="bg-ivory-surface border border-border-cream p-16 flex justify-between shadow-[0px_0px_0px_1px_rgba(240,238,230,1)] hover:bg-white transition-colors flex-col rounded-[32px]"><div class="flex items-center justify-between mb-12">
+<div class="flex items-center gap-12">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant font-body-ui-bold text-body-ui-bold">M</div>
+<div class="flex flex-col">
+<span class="font-body-ui-bold text-body-ui-bold text-near-black-text">Marcus T.</span>
+<span class="font-caption text-caption text-olive-gray">0/2 Tasks Complete</span>
+</div>
+</div>
+<button class="bg-terracotta-brand text-on-primary font-label text-label py-8 pl-12 pr-16 flex items-center gap-6 hover:bg-brand-dark transition-colors shadow-[0px_0px_0px_1px_rgba(201,100,66,1)] rounded-xl">
+<span class="material-symbols-outlined text-[16px]" data-icon="notifications_active">notifications_active</span>Poke
+</button>
+</div>
+<ul class="space-y-6 mt-12 border-t border-border-cream pt-12">
+<li class="flex items-center gap-8 text-caption text-near-black-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>Buy Groceries
+</li>
+<li class="flex items-center gap-8 text-caption text-near-black-text">
+<span class="material-symbols-outlined text-[14px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>Oil Change
+</li>
+</ul></div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-parchment-bg dark:bg-surface-dark pb-safe border-t border-border-cream dark:border-on-surface-variant">
+<button class="flex flex-col items-center justify-center text-olive-gray dark:text-secondary-fixed-dim hover:text-terracotta-brand dark:hover:text-brand-dark w-1/3 h-full">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="font-label text-label">Friends</span>
+</button>
+<button class="flex flex-col items-center justify-center text-terracotta-brand dark:text-brand-dark font-body-ui-bold w-1/3 h-full relative group">
+<div class="absolute inset-2 rounded-xl group-hover:bg-surface-variant/30 transition-colors pointer-events-none"></div>
+<span class="material-symbols-outlined fill mb-1" data-icon="assignment" data-weight="fill">assignment</span>
+<span class="font-label text-label">Tasks</span>
+</button>
+<button class="flex flex-col items-center justify-center text-olive-gray dark:text-secondary-fixed-dim hover:text-terracotta-brand dark:hover:text-brand-dark w-1/3 h-full">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-label text-label">You</span>
+</button>
+</nav>
+<!-- Desktop Nav Anchor (Hidden on Mobile, visual balance) -->
+<div class="hidden md:flex fixed bottom-8 right-8">
+<button class="bg-terracotta-brand text-on-primary rounded-full w-16 h-16 flex items-center justify-center shadow-lg hover:scale-105 transition-transform duration-200">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+</div>
+</body></html>

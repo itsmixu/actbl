@@ -1,5 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -7,498 +11,529 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import ConfettiCannon from 'react-native-confetti-cannon';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAppContext } from '../context/AppContext';
-import { palette, typography } from '../theme/claudeTheme';
+import { getThemeColors, palette, radius, space, text } from '../theme/theme';
+
+const CONFETTI_COLORS = [
+  palette.terracotta,
+  palette.coral,
+  palette.warmSand,
+  palette.brandDark,
+  palette.ivory,
+];
+
+function getGreeting(now = new Date()): string {
+  const hour = now.getHours();
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 22) return 'Good evening';
+  return 'Hello';
+}
 
 export function TasksScreen() {
   const {
     currentUser,
-    weekStartISO,
     friends,
-    incomingPokes,
     currentWeekTasks,
     darkModeEnabled,
     sendPoke,
-    respondToPoke,
-    defaultPokeMessage,
     createTask,
     toggleTask,
-    deleteTask,
   } = useAppContext();
 
-  const [taskTitle, setTaskTitle] = useState('');
-  const [selectedFriendId, setSelectedFriendId] = useState<string | undefined>(undefined);
-  const [pokeMessage, setPokeMessage] = useState('');
+  const c = getThemeColors(darkModeEnabled);
+  const styles = useMemo(() => createStyles(c), [c]);
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
   const [feedback, setFeedback] = useState('');
-  const styles = useMemo(() => createStyles(darkModeEnabled), [darkModeEnabled]);
+  const [confettiBurst, setConfettiBurst] = useState(0);
+  const previousCompletedRef = useRef<Record<string, boolean>>({});
 
-  const friendNameById = useMemo(() => {
-    return Object.fromEntries(friends.map((friend) => [friend.id, friend.name]));
-  }, [friends]);
+  // Sort: incomplete first, then completed — both newest-first within their group.
+  const sortedTasks = useMemo(() => {
+    return [...currentWeekTasks].sort((a, b) => {
+      if (a.completed !== b.completed) return a.completed ? 1 : -1;
+      return b.createdAt.localeCompare(a.createdAt);
+    });
+  }, [currentWeekTasks]);
 
-  const weekLabel = useMemo(() => {
-    const date = new Date(weekStartISO);
-    return date.toLocaleDateString();
-  }, [weekStartISO]);
-
-  const ongoingTasks = useMemo(
-    () => currentWeekTasks.filter((task) => !task.completed),
-    [currentWeekTasks],
-  );
-
-  const pendingIncomingPokes = useMemo(
-    () => incomingPokes.filter((poke) => poke.status === 'pending'),
-    [incomingPokes],
-  );
-
-  const tasksWithFriend = useMemo(() => {
-    const bucket = new Map<string, string[]>();
-    for (const task of ongoingTasks) {
-      if (!task.accountabilityFriendId) {
-        continue;
+  function handleToggleTask(taskId: string) {
+    const task = currentWeekTasks.find((t) => t.id === taskId);
+    const wasCompleted = previousCompletedRef.current[taskId] ?? task?.completed ?? false;
+    void toggleTask(taskId).then(() => {
+      // Trigger confetti when transitioning incomplete → complete.
+      if (!wasCompleted) {
+        setConfettiBurst((n) => n + 1);
       }
-      const existing = bucket.get(task.accountabilityFriendId) ?? [];
-      existing.push(task.title);
-      bucket.set(task.accountabilityFriendId, existing);
-    }
-    return bucket;
-  }, [ongoingTasks]);
-
-  const motivationalMessage = useMemo(() => {
-    const firstName = currentUser?.name?.trim().split(' ')[0] ?? 'friend';
-    const messages = [
-      `${firstName}, one steady week can change everything.`,
-      `${firstName}, small wins every day build serious momentum.`,
-      `${firstName}, stay close to your promises this week.`,
-      `${firstName}, consistency today is confidence tomorrow.`,
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
-  }, [currentUser?.name]);
-
-  function getTaskFriendLabel(accountabilityFriendId?: string): string {
-    if (!accountabilityFriendId) {
-      return 'Personal accountability';
-    }
-    return `With ${friendNameById[accountabilityFriendId] ?? 'Friend'}`;
+      previousCompletedRef.current[taskId] = !wasCompleted;
+    });
   }
 
-  async function submitTask() {
-    const actionResult = await createTask(taskTitle, selectedFriendId);
-    setFeedback(actionResult.message);
-    if (actionResult.ok) {
-      setTaskTitle('');
+  const greeting = useMemo(() => getGreeting(), []);
+  const firstName = (currentUser?.name ?? 'there').split(' ')[0];
+
+  async function handleAddTask() {
+    const title = newTaskTitle.trim();
+    if (!title) {
+      setIsAdding(false);
+      return;
+    }
+    const r = await createTask(title);
+    if (r.ok) {
+      setNewTaskTitle('');
+      setIsAdding(false);
+      setFeedback('');
+    } else {
+      setFeedback(r.message);
     }
   }
 
-  async function submitPoke(friendId: string) {
-    const actionResult = await sendPoke(friendId, pokeMessage.trim() ? pokeMessage.trim() : defaultPokeMessage);
-    setFeedback(actionResult.message);
-    if (actionResult.ok) {
-      setPokeMessage('');
-    }
+  async function handlePoke(friendId: string) {
+    const r = await sendPoke(friendId);
+    setFeedback(r.message);
   }
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {pendingIncomingPokes.length > 0 ? (
-          <View style={[styles.card, styles.incomingCard]}>
-            <Text style={styles.subHeading}>Pokes waiting for your response</Text>
-            {pendingIncomingPokes.map((poke) => (
-              <View key={poke.id} style={styles.pokeRow}>
-                <Text style={styles.taskTitle}>{poke.fromName}</Text>
-                <Text style={styles.taskMeta}>{poke.message}</Text>
-                <View style={styles.rowActions}>
-                  <Pressable
-                    style={styles.doneButton}
-                    onPress={async () => {
-                      const actionResult = await respondToPoke(poke.id, 'on_it');
-                      setFeedback(actionResult.message);
-                    }}
-                  >
-                    <Text style={styles.doneButtonText}>I'm on it</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.deleteButton}
-                    onPress={async () => {
-                      const actionResult = await respondToPoke(poke.id, 'later');
-                      setFeedback(actionResult.message);
-                    }}
-                  >
-                    <Text style={styles.deleteButtonText}>Later</Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </View>
-        ) : null}
+      {/* Sticky top app bar */}
+      <View style={styles.appBar}>
+        <Text style={styles.appBarTitle}>actbl.</Text>
+      </View>
 
-        <Text style={styles.brandTitle}>actbl.</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.kicker}>WEEKLY FOCUS</Text>
-          <Text style={styles.sectionTitle}>What matters this week</Text>
-          <Text style={styles.heroMessage}>{motivationalMessage}</Text>
-          <Text style={styles.label}>Week starts on {weekLabel}</Text>
-
-          {currentWeekTasks.length === 0 ? (
-            <Text style={styles.emptyText}>No tasks yet. Add one below to start this week.</Text>
-          ) : (
-            currentWeekTasks.map((task) => (
-              <View key={task.id} style={styles.taskRow}>
-                <Pressable
-                  style={styles.taskMain}
-                  onPress={async () => {
-                    const actionResult = await toggleTask(task.id);
-                    setFeedback(actionResult.message);
-                  }}
-                >
-                  <View style={[styles.statusDot, task.completed && styles.statusDotDone]} />
-                  <View style={styles.taskTextWrap}>
-                    <Text style={[styles.taskTitle, task.completed && styles.taskTitleDone]}>{task.title}</Text>
-                    <Text style={styles.taskMeta}>{getTaskFriendLabel(task.accountabilityFriendId)}</Text>
-                  </View>
-                </Pressable>
-                <Pressable
-                  style={styles.deleteButton}
-                  onPress={async () => {
-                    const actionResult = await deleteTask(task.id);
-                    setFeedback(actionResult.message);
-                  }}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </Pressable>
-              </View>
-            ))
-          )}
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={64}
+      >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Greeting */}
+        <View style={styles.greetingBlock}>
+          <Text style={styles.greetingHeading}>
+            {greeting},{'\n'}
+            {firstName}.
+          </Text>
+          <Text style={styles.greetingSubtitle}>Let's make this week count.</Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.subHeading}>Friends and pokes</Text>
-          <Text style={styles.label}>See shared accountability tasks and send a nudge.</Text>
+        {/* Your Tasks */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>Your Tasks</Text>
+          <View style={styles.sectionDivider} />
 
-          <TextInput
-            style={styles.input}
-            value={pokeMessage}
-            onChangeText={setPokeMessage}
-            placeholder="Optional custom poke message"
-          />
-
-          {friends.length === 0 ? (
-            <Text style={styles.emptyText}>No friends linked yet. Add one in the Friends tab.</Text>
-          ) : (
-            friends.map((friend) => (
-              <View key={friend.id} style={styles.friendBlock}>
-                <View style={styles.friendRowTop}>
-                  <Text style={styles.taskTitle}>{friend.name}</Text>
-                  <Pressable style={styles.doneButton} onPress={() => void submitPoke(friend.id)}>
-                    <Text style={styles.doneButtonText}>Poke</Text>
-                  </Pressable>
-                </View>
-                {tasksWithFriend.get(friend.id)?.length ? (
-                  tasksWithFriend.get(friend.id)?.slice(0, 3).map((title) => (
-                    <Text key={`${friend.id}-${title}`} style={styles.taskMeta}>
-                      - {title}
-                    </Text>
-                  ))
-                ) : (
-                  <Text style={styles.taskMeta}>No active linked tasks yet.</Text>
-                )}
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.subHeading}>Create new task</Text>
-
-          <TextInput
-            style={styles.input}
-            value={taskTitle}
-            onChangeText={setTaskTitle}
-            placeholder="Add a weekly task"
-          />
-
-          <Text style={styles.label}>Accountability friend (optional)</Text>
-          <View style={styles.friendPillsRow}>
-            <Pressable
-              style={[
-                styles.friendPill,
-                selectedFriendId === undefined && styles.friendPillSelected,
-              ]}
-              onPress={() => setSelectedFriendId(undefined)}
-            >
-              <Text
-                style={[
-                  styles.friendPillText,
-                  selectedFriendId === undefined && styles.friendPillTextSelected,
-                ]}
-              >
-                None
+          <View style={styles.taskList}>
+            {currentWeekTasks.length === 0 && !isAdding && (
+              <Text style={styles.emptyText}>
+                No tasks yet. Tap the + to add your first commitment.
               </Text>
-            </Pressable>
-            {friends.map((friend) => (
+            )}
+
+            {sortedTasks.map((task) => (
               <Pressable
-                key={friend.id}
-                style={[
-                  styles.friendPill,
-                  selectedFriendId === friend.id && styles.friendPillSelected,
+                key={task.id}
+                onPress={() => handleToggleTask(task.id)}
+                style={({ pressed }) => [
+                  styles.taskCard,
+                  task.completed && styles.taskCardDone,
+                  pressed && styles.taskCardPressed,
                 ]}
-                onPress={() => setSelectedFriendId(friend.id)}
               >
-                <Text
+                <View
                   style={[
-                    styles.friendPillText,
-                    selectedFriendId === friend.id && styles.friendPillTextSelected,
+                    styles.checkbox,
+                    task.completed && styles.checkboxChecked,
                   ]}
                 >
-                  {friend.name}
-                </Text>
+                  {task.completed && (
+                    <Ionicons name="checkmark" size={16} color={c.brandText} />
+                  )}
+                </View>
+                <View style={styles.taskBody}>
+                  <Text
+                    style={[
+                      styles.taskTitle,
+                      task.completed && styles.taskTitleDone,
+                    ]}
+                  >
+                    {task.title}
+                  </Text>
+                </View>
               </Pressable>
             ))}
+
+            {isAdding && (
+              <View style={styles.addCard}>
+                <TextInput
+                  value={newTaskTitle}
+                  onChangeText={setNewTaskTitle}
+                  placeholder="What are you committing to?"
+                  placeholderTextColor={c.textTertiary}
+                  style={styles.addInput}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddTask}
+                />
+                <View style={styles.addActions}>
+                  <Pressable
+                    onPress={() => {
+                      setNewTaskTitle('');
+                      setIsAdding(false);
+                    }}
+                    style={styles.addSecondaryButton}
+                  >
+                    <Text style={styles.addSecondaryText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={handleAddTask} style={styles.addPrimaryButton}>
+                    <Text style={styles.addPrimaryText}>Add</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
           </View>
 
-          <Pressable style={styles.primaryButton} onPress={() => void submitTask()}>
-            <Text style={styles.primaryButtonText}>Add Weekly Task</Text>
-          </Pressable>
-
-          {feedback ? <Text style={styles.feedbackText}>{feedback}</Text> : null}
+          {/* Floating + button */}
+          {!isAdding && (
+            <View style={styles.fabRow}>
+              <Pressable
+                onPress={() => setIsAdding(true)}
+                style={({ pressed }) => [
+                  styles.fab,
+                  pressed && styles.fabPressed,
+                ]}
+                hitSlop={10}
+                accessibilityLabel="Add task"
+              >
+                <Ionicons name="add" size={28} color={c.brandText} />
+              </Pressable>
+            </View>
+          )}
         </View>
+
+        {/* Friend's Progress */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeading}>Friend's Progress</Text>
+          <View style={styles.sectionDivider} />
+
+          <View style={styles.friendList}>
+            {friends.length === 0 && (
+              <Text style={styles.emptyText}>
+                Add a friend to share weekly commitments.
+              </Text>
+            )}
+
+            {friends.map((friend) => {
+              const initial = friend.name?.charAt(0).toUpperCase() ?? '?';
+              return (
+                <View key={friend.id} style={styles.friendCard}>
+                  <View style={styles.friendHeader}>
+                    <View style={styles.friendIdentity}>
+                      <View style={styles.avatar}>
+                        <Text style={styles.avatarText}>{initial}</Text>
+                      </View>
+                      <View style={styles.friendNameBlock}>
+                        <Text style={styles.friendName}>{friend.name}</Text>
+                        <Text style={styles.friendSubtitle}>
+                          Working on this week
+                        </Text>
+                      </View>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        void handlePoke(friend.id);
+                      }}
+                      style={({ pressed }) => [
+                        styles.pokeButton,
+                        pressed && styles.pokeButtonPressed,
+                      ]}
+                    >
+                      <Ionicons
+                        name="notifications"
+                        size={14}
+                        color={c.brandText}
+                      />
+                      <Text style={styles.pokeButtonText}>Poke</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Confetti overlay — re-mounted on each burst via the key */}
+      {confettiBurst > 0 && (
+        <View pointerEvents="none" style={styles.confettiLayer}>
+          <ConfettiCannon
+            key={confettiBurst}
+            count={60}
+            origin={{ x: Dimensions.get('window').width / 2, y: -20 }}
+            fadeOut
+            fallSpeed={3500}
+            explosionSpeed={280}
+            colors={CONFETTI_COLORS}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-function createStyles(darkModeEnabled: boolean) {
-  const surface = darkModeEnabled ? '#111315' : palette.parchment;
-  const card = darkModeEnabled ? '#1a1d20' : palette.white;
-  const cardBorder = darkModeEnabled ? '#2b2f35' : '#dfd7c8';
-  const primaryText = darkModeEnabled ? '#f2f2f2' : palette.nearBlack;
-  const secondaryText = darkModeEnabled ? '#b3bac3' : palette.oliveGray;
-  const mutedText = darkModeEnabled ? '#8f97a3' : palette.stoneGray;
-  const rowBorder = darkModeEnabled ? '#31363d' : '#ddd3c3';
-  const inputBg = darkModeEnabled ? '#20242a' : palette.white;
-
+function createStyles(c: ReturnType<typeof getThemeColors>) {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: surface,
+      backgroundColor: c.background,
     },
-  scrollContent: {
-    padding: 16,
-    paddingTop: 22,
-    paddingBottom: 44,
-    gap: 14,
-  },
-  brandTitle: {
-    fontFamily: typography.serif,
-    fontSize: 35,
-    color: primaryText,
-    lineHeight: 38,
-    textAlign: 'center',
-    marginBottom: 2,
-  },
-  card: {
-    backgroundColor: card,
-    borderWidth: 1,
-    borderColor: cardBorder,
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-  },
-  incomingCard: {
-    borderColor: darkModeEnabled ? '#3b3430' : '#e6c9bf',
-    backgroundColor: darkModeEnabled ? '#241f1c' : '#fff7f2',
-  },
-  heroMessage: {
-    fontFamily: typography.sans,
-    fontSize: 15,
-    lineHeight: 23,
-    color: secondaryText,
-  },
-  kicker: {
-    fontFamily: typography.sans,
-    fontSize: 11,
-    letterSpacing: 0.6,
-    color: mutedText,
-  },
-  sectionTitle: {
-    fontFamily: typography.serif,
-    fontSize: 31,
-    color: primaryText,
-    lineHeight: 36,
-  },
-  subHeading: {
-    fontFamily: typography.serif,
-    fontSize: 24,
-    color: primaryText,
-    lineHeight: 29,
-  },
-  label: {
-    color: secondaryText,
-    fontSize: 14,
-    fontFamily: typography.sans,
-    lineHeight: 22,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#3a4048' : '#d2c8b5',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    fontSize: 16,
-    color: primaryText,
-    backgroundColor: inputBg,
-    fontFamily: typography.sans,
-  },
-  friendPillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  friendPill: {
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#3a4048' : '#d2c8b5',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: inputBg,
-  },
-  friendPillSelected: {
-    backgroundColor: palette.terracotta,
-    borderColor: palette.terracotta,
-  },
-  friendPillText: {
-    color: secondaryText,
-    fontWeight: '500',
-    fontFamily: typography.sans,
-  },
-  friendPillTextSelected: {
-    color: palette.ivory,
-  },
-  primaryButton: {
-    backgroundColor: palette.terracotta,
-    borderRadius: 12,
-    alignItems: 'center',
-    paddingVertical: 12,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.08,
-    shadowRadius: 1,
-  },
-  primaryButtonText: {
-    color: palette.ivory,
-    fontWeight: '600',
-    fontFamily: typography.sans,
-  },
-  feedbackText: {
-    color: secondaryText,
-    fontFamily: typography.sans,
-  },
-  friendBlock: {
-    borderWidth: 1,
-    borderColor: rowBorder,
-    borderRadius: 12,
-    padding: 10,
-    gap: 4,
-    backgroundColor: card,
-  },
-  friendRowTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  pokeRow: {
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#3a342f' : '#e4d4ca',
-    borderRadius: 12,
-    padding: 10,
-    gap: 8,
-    backgroundColor: card,
-  },
-  emptyText: {
-    color: mutedText,
-    fontFamily: typography.sans,
-  },
-  taskRow: {
-    borderWidth: 1,
-    borderColor: rowBorder,
-    borderRadius: 12,
-    padding: 10,
-    gap: 10,
-    backgroundColor: card,
-  },
-  taskMain: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    flex: 1,
-  },
-  statusDot: {
-    marginTop: 5,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: palette.terracotta,
-  },
-  statusDotDone: {
-    backgroundColor: palette.stoneGray,
-  },
-  taskTextWrap: {
-    flex: 1,
-    gap: 4,
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: primaryText,
-    fontFamily: typography.sans,
-  },
-  taskTitleDone: {
-    textDecorationLine: 'line-through',
-    color: mutedText,
-  },
-  taskMeta: {
-    fontSize: 13,
-    color: secondaryText,
-    fontFamily: typography.sans,
-  },
-  rowActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  doneButton: {
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#4a5159' : '#d2c8b5',
-    backgroundColor: darkModeEnabled ? '#2a3037' : palette.warmSand,
-    borderRadius: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  doneButtonText: {
-    color: darkModeEnabled ? '#f2f2f2' : palette.charcoalWarm,
-    fontFamily: typography.sans,
-    fontWeight: '500',
-  },
-  deleteButton: {
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#5a3a3a' : '#e0ccc6',
-    borderRadius: 9,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    backgroundColor: card,
-  },
-  deleteButtonText: {
-    color: palette.errorCrimson,
-    fontWeight: '500',
-    fontFamily: typography.sans,
-  },
+    flex: {
+      flex: 1,
+    },
+    appBar: {
+      backgroundColor: c.background,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      paddingVertical: space.base,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    appBarTitle: {
+      ...text.subHeadingLg,
+      fontSize: 24,
+      lineHeight: 28,
+      color: c.brand,
+    },
+    scrollContent: {
+      paddingHorizontal: space.xl,
+      paddingTop: space.section,
+      paddingBottom: space.sectionLg,
+    },
+    greetingBlock: {
+      alignItems: 'center',
+      marginBottom: space.section,
+    },
+    greetingHeading: {
+      ...text.displayHero,
+      color: c.textPrimary,
+      textAlign: 'center',
+      marginBottom: space.md,
+    },
+    greetingSubtitle: {
+      ...text.bodyLarge,
+      color: c.textSecondary,
+      textAlign: 'center',
+    },
+    section: {
+      marginBottom: space.section,
+    },
+    sectionHeading: {
+      ...text.subHeading,
+      color: c.textPrimary,
+      textAlign: 'center',
+      paddingBottom: space.md,
+    },
+    sectionDivider: {
+      height: 1,
+      backgroundColor: c.border,
+      marginBottom: space.xl,
+    },
+    taskList: {
+      gap: space.md,
+    },
+    emptyText: {
+      ...text.bodyStandard,
+      color: c.textTertiary,
+      textAlign: 'center',
+      paddingVertical: space.lg,
+    },
+    taskCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingVertical: space.lg,
+      paddingHorizontal: space.xl,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.base,
+      position: 'relative',
+      overflow: 'hidden',
+    },
+    taskCardDone: {
+      // visual stays the same; the accent + line-through carry the state
+    },
+    taskCardPressed: {
+      backgroundColor: c.surfaceRaised,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: c.textTertiary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.surfaceRaised,
+    },
+    checkboxChecked: {
+      borderColor: c.brand,
+      backgroundColor: c.brand,
+    },
+    taskBody: {
+      flex: 1,
+      gap: 4,
+    },
+    taskTitle: {
+      ...text.featureTitle,
+      color: c.textPrimary,
+    },
+    taskTitleDone: {
+      textDecorationLine: 'line-through',
+      opacity: 0.55,
+    },
+    fabRow: {
+      alignItems: 'center',
+      marginTop: space.xl,
+    },
+    fab: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: c.brand,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    fabPressed: {
+      opacity: 0.85,
+      transform: [{ scale: 0.97 }],
+    },
+    addCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xxl,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: space.xl,
+      gap: space.md,
+    },
+    addInput: {
+      ...text.bodyStandard,
+      color: c.textPrimary,
+      paddingVertical: space.sm,
+    },
+    addActions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: space.sm,
+    },
+    addPrimaryButton: {
+      backgroundColor: c.brand,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.sm + 2,
+      borderRadius: radius.md,
+    },
+    addPrimaryText: {
+      ...text.bodyUiBold,
+      color: c.brandText,
+    },
+    addSecondaryButton: {
+      backgroundColor: c.secondaryButtonBg,
+      paddingHorizontal: space.lg,
+      paddingVertical: space.sm + 2,
+      borderRadius: radius.md,
+    },
+    addSecondaryText: {
+      ...text.bodyUiBold,
+      color: c.secondaryButtonText,
+    },
+    friendList: {
+      gap: space.md,
+    },
+    friendCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: space.lg,
+    },
+    friendHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: space.md,
+    },
+    friendIdentity: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.md,
+      flexShrink: 1,
+    },
+    avatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: c.surfaceActive,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      ...text.bodyUiBold,
+      color: c.textPrimary,
+    },
+    friendNameBlock: {
+      flexShrink: 1,
+    },
+    friendName: {
+      ...text.bodyUiBold,
+      color: c.textPrimary,
+    },
+    friendSubtitle: {
+      ...text.caption,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    pokeButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: c.brand,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      borderRadius: radius.md,
+    },
+    pokeButtonPressed: {
+      opacity: 0.85,
+    },
+    pokeButtonText: {
+      ...text.label,
+      color: c.brandText,
+    },
+    feedback: {
+      ...text.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: space.base,
+    },
+    bottomSpacer: {
+      height: space.section,
+    },
+    confettiLayer: {
+      ...StyleSheet.absoluteFillObject,
+    },
   });
 }

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>actbl - You</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Newsreader:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dark": "#1c1b19",
+                    "text-dark-primary": "#ede9df",
+                    "error-crimson": "#b53333",
+                    "tertiary-fixed-dim": "#6cd7d8",
+                    "on-surface-variant": "#56423c",
+                    "surface-container": "#fdeae4",
+                    "border-cream": "#f0eee6",
+                    "olive-gray": "#5e5d59",
+                    "on-tertiary-fixed": "#002020",
+                    "focus-blue": "#3898ec",
+                    "coral-accent": "#d97757",
+                    "secondary-fixed-dim": "#c8c7bd",
+                    "secondary": "#5f5f57",
+                    "outline-variant": "#dcc1b8",
+                    "tertiary-fixed": "#89f4f4",
+                    "on-primary": "#ffffff",
+                    "inverse-surface": "#392e2b",
+                    "warm-sand": "#e8e6dc",
+                    "surface-dim": "#e9d6d1",
+                    "brand-dark": "#d4693e",
+                    "primary-fixed": "#ffdbd0",
+                    "on-secondary-container": "#65655d",
+                    "error": "#ba1a1a",
+                    "primary-container": "#b95837",
+                    "ivory-surface": "#faf9f5",
+                    "on-secondary": "#ffffff",
+                    "surface": "#fff8f6",
+                    "on-tertiary-container": "#f3fffe",
+                    "error-container": "#ffdad6",
+                    "primary": "#9a4021",
+                    "on-primary-fixed-variant": "#7e2c0e",
+                    "surface-container-high": "#f7e4df",
+                    "background": "#fff8f6",
+                    "on-primary-fixed": "#390b00",
+                    "surface-tint": "#9d4324",
+                    "on-surface": "#231916",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-low": "#fff1ed",
+                    "on-error": "#ffffff",
+                    "secondary-fixed": "#e5e3d9",
+                    "charcoal-warm": "#4d4c48",
+                    "on-primary-container": "#fffbff",
+                    "surface-bright": "#fff8f6",
+                    "tertiary": "#006768",
+                    "outline": "#89726b",
+                    "inverse-primary": "#ffb59d",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#474740",
+                    "inverse-on-surface": "#ffede8",
+                    "secondary-container": "#e5e3d9",
+                    "bg-dark": "#141413",
+                    "on-tertiary-fixed-variant": "#004f50",
+                    "tertiary-container": "#008283",
+                    "near-black-text": "#141413",
+                    "terracotta-brand": "#c96442",
+                    "on-background": "#231916",
+                    "primary-fixed-dim": "#ffb59d",
+                    "stone-gray": "#87867f",
+                    "on-secondary-fixed": "#1b1c16",
+                    "surface-variant": "#f1dfd9",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-highest": "#f1dfd9",
+                    "parchment-bg": "#f5f4ed"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "24": "24px",
+                    "16": "16px",
+                    "card-padding": "24px",
+                    "section-gap-md": "80px",
+                    "30": "30px",
+                    "20": "20px",
+                    "10": "10px",
+                    "3": "3px",
+                    "base": "8px",
+                    "8": "8px",
+                    "4": "4px",
+                    "section-gap-lg": "120px",
+                    "6": "6px",
+                    "12": "12px"
+            },
+            "fontFamily": {
+                    "label": [
+                            "Inter"
+                    ],
+                    "body-ui-bold": [
+                            "Inter"
+                    ],
+                    "sub-heading-lg": [
+                            "Newsreader"
+                    ],
+                    "body-large": [
+                            "Inter"
+                    ],
+                    "display-hero": [
+                            "Newsreader"
+                    ],
+                    "sub-heading": [
+                            "Newsreader"
+                    ],
+                    "feature-title": [
+                            "Newsreader"
+                    ],
+                    "section-heading": [
+                            "Newsreader"
+                    ],
+                    "overline": [
+                            "Inter"
+                    ],
+                    "body-standard": [
+                            "Inter"
+                    ],
+                    "caption": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "label": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.30",
+                                    "letterSpacing": "0.12px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-ui-bold": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.25",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "sub-heading-lg": [
+                            "36px",
+                            {
+                                    "lineHeight": "1.30",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-large": [
+                            "20px",
+                            {
+                                    "lineHeight": "1.60",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-hero": [
+                            "64px",
+                            {
+                                    "lineHeight": "1.10",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "sub-heading": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.10",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "feature-title": [
+                            "20.8px",
+                            {
+                                    "lineHeight": "1.20",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "section-heading": [
+                            "52px",
+                            {
+                                    "lineHeight": "1.20",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "overline": [
+                            "10px",
+                            {
+                                    "lineHeight": "1.60",
+                                    "letterSpacing": "0.5px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-standard": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.60",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "caption": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.43",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-parchment-bg dark:bg-surface-dark text-on-surface dark:text-text-dark-primary min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-8 py-16 md:py-24 grid grid-cols-1 gap-12 flex flex-col items-center">
+<!-- Profile Section (Left Col on Desktop) -->
+<section class="flex flex-col gap-10 w-full max-w-md mx-auto">
+<div class="bg-ivory-surface border border-border-cream rounded-[32px] p-8 flex flex-col items-center text-center gap-6">
+<div class="w-32 h-32 rounded-full overflow-hidden border-2 border-border-cream">
+<img alt="Profile avatar" class="w-full h-full object-cover" data-alt="A portrait photo of a young professional in a softly lit, warm environment, reflecting a human, grounded aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYBA_bkBBc-GlSIAXU1j13ztOcx8u3DbZ3Citn7stBEhBPvoxD_f6gb34DM3KSTAGfJG-RQYPnGWCeaRHYu_YdkCd3T3POxWsAYf3a92IS4pNUqbO56b37lsdDVDeP_9TZdkqBT3li6XAgWefhjvMTdTifH6f5cK5mL9QuTQmc8pXlQYxSThRTzY98KZfgS2eV9dgtgm5D7GC2Bq_nVmap4QhQt4Hp84uOur3wMIEB8hxFBmlsAxnpc2qwvWoNSLkfxWgP37kjyQ"/>
+</div>
+<div>
+<h2 class="font-sub-heading text-sub-heading text-near-black-text">Alex Morgan</h2>
+<p class="font-body-standard text-body-standard text-olive-gray mt-1">@alex_m</p>
+</div>
+<div class="flex gap-4 w-full mt-4">
+<div class="flex-1 bg-parchment-bg rounded-[20px] p-5 flex flex-col items-center justify-center border border-border-cream">
+<span class="font-feature-title text-feature-title text-terracotta-brand">85%</span>
+<span class="font-caption text-caption text-olive-gray">This Week</span>
+</div>
+<div class="flex-1 bg-parchment-bg rounded-[20px] p-5 flex flex-col items-center justify-center border border-border-cream">
+<span class="font-feature-title text-feature-title text-terracotta-brand">42</span>
+<span class="font-caption text-caption text-olive-gray">Current Streak</span>
+</div>
+</div>
+</div>
+<!-- Quick Actions -->
+<div class="flex justify-center gap-8 mt-4">
+<button class="w-14 h-14 bg-warm-sand text-charcoal-warm rounded-full ring-1 ring-black/5 hover:bg-stone-gray/10 transition-colors flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" data-icon="edit">edit</span>
+</button>
+<button class="w-14 h-14 bg-warm-sand text-charcoal-warm rounded-full ring-1 ring-black/5 hover:bg-stone-gray/10 transition-colors flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+</div>
+</section>
+<!-- Settings Section (Right Col on Desktop) -->
+<section class="flex flex-col gap-8 w-full max-w-md mx-auto mt-4">
+<div class="flex flex-col gap-6">
+<!-- Account Setting -->
+<button class="w-full bg-ivory-surface border border-border-cream rounded-[24px] p-5 flex items-center justify-between hover:bg-warm-sand transition-colors text-left">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-body-ui-bold text-body-ui-bold text-near-black-text">Account Details</div>
+<div class="font-caption text-caption text-olive-gray">Email, Password, Linked Accounts</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-olive-gray" data-icon="chevron_right">chevron_right</span>
+</button>
+<!-- Notifications Setting -->
+<button class="w-full bg-ivory-surface border border-border-cream rounded-[24px] p-5 flex items-center justify-between hover:bg-warm-sand transition-colors text-left">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-body-ui-bold text-body-ui-bold text-near-black-text">Notifications</div>
+<div class="font-caption text-caption text-olive-gray">Push, Email, Nudges</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-olive-gray" data-icon="chevron_right">chevron_right</span>
+</button>
+<!-- Privacy Setting -->
+<button class="w-full bg-ivory-surface border border-border-cream rounded-[24px] p-5 flex items-center justify-between hover:bg-warm-sand transition-colors text-left">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-body-ui-bold text-body-ui-bold text-near-black-text">Privacy</div>
+<div class="font-caption text-caption text-olive-gray">Visibility, Blocked Users</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-olive-gray" data-icon="chevron_right">chevron_right</span>
+</button>
+<!-- Dark Mode Toggle -->
+<div class="w-full bg-ivory-surface border border-border-cream rounded-[24px] p-5 flex items-center justify-between mt-6">
+<div class="flex items-center gap-4">
+<div>
+<div class="font-body-ui-bold text-body-ui-bold text-near-black-text">Dark Mode</div>
+<div class="font-caption text-caption text-olive-gray">Switch to a darker theme</div>
+</div>
+</div>
+<!-- Simple Toggle Switch HTML representation -->
+<button class="w-12 h-6 bg-border-cream rounded-full relative transition-colors focus:outline-none focus:ring-2 focus:ring-focus-blue focus:ring-offset-2">
+<span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform"></span>
+</button>
+</div>
+</div>
+<div class="mt-10 flex flex-row gap-4 w-full">
+<button class="flex-1 bg-transparent border border-error-crimson text-error-crimson font-body-ui-bold text-body-ui-bold py-5 px-4 rounded-[32px] hover:bg-error-crimson/5 transition-colors">
+    Sign Out
+  </button>
+<button class="flex-1 bg-transparent border border-error-crimson/20 text-error-crimson font-body-ui-bold text-body-ui-bold py-5 px-4 rounded-[32px] hover:bg-error-crimson/5 transition-colors">
+    Delete Account
+  </button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden bg-parchment-bg dark:bg-surface-dark border-t border-border-cream dark:border-on-surface-variant fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 pb-safe">
+<button class="flex flex-col items-center justify-center text-olive-gray dark:text-secondary-fixed-dim hover:text-terracotta-brand dark:hover:text-brand-dark w-full h-full">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="font-label text-label">Friends</span>
+</button>
+<button class="flex flex-col items-center justify-center text-olive-gray dark:text-secondary-fixed-dim hover:text-terracotta-brand dark:hover:text-brand-dark w-full h-full">
+<span class="material-symbols-outlined mb-1" data-icon="assignment">assignment</span>
+<span class="font-label text-label">Tasks</span>
+</button>
+<!-- Active State -->
+<button class="flex flex-col items-center justify-center text-terracotta-brand dark:text-brand-dark font-body-ui-bold hover:text-terracotta-brand dark:hover:text-brand-dark w-full h-full relative">
+<div class="absolute inset-2 ring-1 ring-terracotta-brand/10 rounded-[16px]"></div>
+<span class="material-symbols-outlined mb-1" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label text-label">You</span>
+</button>
+</nav>
+</body></html>

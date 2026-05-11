@@ -2,6 +2,7 @@
   "expo": {
     "name": "actbl",
     "slug": "actbl",
+    "scheme": "actbl",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +26,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow actbl to use the camera to scan a friend's QR code."
+        }
+      ]
+    ]
   }
 }

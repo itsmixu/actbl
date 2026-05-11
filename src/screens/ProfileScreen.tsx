@@ -1,248 +1,815 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemedDialog } from '../components/ThemedDialog';
 import { useAppContext } from '../context/AppContext';
-import { palette, typography } from '../theme/claudeTheme';
+import { useAuth } from '../context/AuthContext';
+import { getThemeColors, palette, radius, space, text } from '../theme/theme';
+
+const SHARE_URL = 'https://github.com/itsmixu/actbl';
+
+type DialogState =
+  | { kind: 'none' }
+  | { kind: 'placeholder'; name: string }
+  | { kind: 'about' }
+  | { kind: 'confirmReset' }
+  | { kind: 'confirmSignOut' }
+  | { kind: 'reminderTime' };
+
+function formatTime12h(hour: number, minute: number): string {
+  const h12 = ((hour + 11) % 12) + 1;
+  const suffix = hour < 12 ? 'AM' : 'PM';
+  return `${h12}:${String(minute).padStart(2, '0')} ${suffix}`;
+}
 
 export function ProfileScreen() {
   const {
     currentUser,
-    signOut,
-    deleteAccount,
+    currentWeekTasks,
     dailyReminderEnabled,
-    setDailyReminderEnabled,
+    dailyReminderHour,
+    dailyReminderMinute,
     darkModeEnabled,
+    setDailyReminderEnabled,
+    setDailyReminderTime,
     setDarkModeEnabled,
+    resetLocalData,
   } = useAppContext();
+  const { user, signOut } = useAuth();
 
-  const [settingsFeedback, setSettingsFeedback] = useState('');
-  const styles = useMemo(() => createStyles(darkModeEnabled), [darkModeEnabled]);
+  const c = getThemeColors(darkModeEnabled);
+  const styles = useMemo(() => createStyles(c), [c]);
+
+  const [shareCopied, setShareCopied] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [dialog, setDialog] = useState<DialogState>({ kind: 'none' });
+  const closeDialog = () => setDialog({ kind: 'none' });
+
+  const completionPct = useMemo(() => {
+    if (currentWeekTasks.length === 0) return 0;
+    const done = currentWeekTasks.filter((t) => t.completed).length;
+    return Math.round((done / currentWeekTasks.length) * 100);
+  }, [currentWeekTasks]);
+
+  const emailHandle = user?.email?.split('@')[0];
+  const handle = emailHandle ?? currentUser?.email?.split('@')[0] ?? 'you';
+  const initial = currentUser?.name?.charAt(0).toUpperCase() ?? '?';
+  const version = Constants.expoConfig?.version ?? '1.0.0';
+
+  async function handleToggleReminder(next: boolean) {
+    const r = await setDailyReminderEnabled(next);
+    if (!r.ok) {
+      setFeedback(r.message);
+    } else {
+      setFeedback('');
+    }
+  }
+
+  async function handleShareCopy() {
+    await Clipboard.setStringAsync(SHARE_URL);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 1800);
+  }
+
+  function handleAbout() {
+    setDialog({ kind: 'about' });
+  }
+
+  function handleResetData() {
+    setDialog({ kind: 'confirmReset' });
+  }
+
+  async function confirmReset() {
+    const r = await resetLocalData();
+    setFeedback(r.message);
+    closeDialog();
+  }
+
+  function handleSignOut() {
+    setDialog({ kind: 'confirmSignOut' });
+  }
+
+  async function confirmSignOut() {
+    closeDialog();
+    // Clear local prototype data so the next signed-in user starts clean,
+    // then sign out of Supabase. The navigator will route to SignInScreen.
+    await resetLocalData();
+    await signOut();
+  }
+
+  function handlePlaceholder(name: string) {
+    setDialog({ kind: 'placeholder', name });
+  }
 
   return (
     <SafeAreaView style={styles.root} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.card, styles.heroCard]}>
-          <Text style={[styles.kicker, styles.heroKicker]}>SETTINGS</Text>
-          <Text style={[styles.sectionTitle, styles.heroTitle]}>Settings</Text>
-          <Text style={[styles.meta, styles.heroMeta]}>Only the essentials</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.subHeading}>Profile</Text>
-          <Text style={styles.name}>{currentUser?.name ?? 'Unknown user'}</Text>
-          <Text style={styles.email}>{currentUser?.email ?? 'No email'}</Text>
-          <Text style={styles.meta}>Friend code: {currentUser?.friendCode ?? '------'}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.subHeading}>App Preferences</Text>
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingTextWrap}>
-              <Text style={styles.settingTitle}>Daily reminder</Text>
-              <Text style={styles.settingDescription}>Receive a daily nudge to finish ongoing tasks.</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Profile card */}
+        <View style={styles.profileCard}>
+          <View style={styles.avatarWrap}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initial}</Text>
             </View>
+          </View>
+          <Text style={styles.name}>{currentUser?.name ?? 'You'}</Text>
+          <Text style={styles.handle}>@{handle}</Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statTile}>
+              <Text style={styles.statValue}>{completionPct}%</Text>
+              <Text style={styles.statLabel}>This Week</Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.statTile,
+                styles.editTile,
+                pressed && styles.editTilePressed,
+              ]}
+              accessibilityLabel="Edit profile"
+              onPress={() => handlePlaceholder('Edit Profile')}
+            >
+              <Ionicons name="create-outline" size={18} color={c.brand} />
+              <Text style={styles.editTileLabel}>Edit Profile</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Settings */}
+        <View style={styles.settingsList}>
+          <SettingRow
+            label="Account Details"
+            onPress={() => handlePlaceholder('Account Details')}
+            c={c}
+            styles={styles}
+          />
+
+          {/* Daily Reminder — label + time pill + switch */}
+          <View style={styles.settingRow}>
+            <Text style={[styles.settingLabel, styles.settingLabelFlex]}>
+              Daily Reminder
+            </Text>
+            <Pressable
+              onPress={() => setDialog({ kind: 'reminderTime' })}
+              style={({ pressed }) => [
+                styles.timePill,
+                pressed && styles.timePillPressed,
+              ]}
+              accessibilityLabel="Change daily reminder time"
+            >
+              <Text style={styles.timePillText}>
+                {formatTime12h(dailyReminderHour, dailyReminderMinute)}
+              </Text>
+            </Pressable>
             <Switch
               value={dailyReminderEnabled}
-              onValueChange={async (enabled) => {
-                const actionResult = await setDailyReminderEnabled(enabled);
-                setSettingsFeedback(actionResult.message);
+              onValueChange={(v) => {
+                void handleToggleReminder(v);
               }}
-              thumbColor={dailyReminderEnabled ? palette.ivory : palette.white}
-              trackColor={{ false: palette.borderWarm, true: palette.terracotta }}
+              trackColor={{ false: palette.warmSand, true: palette.terracotta }}
+              thumbColor={palette.ivory}
             />
           </View>
 
+          {/* Dark mode toggle */}
           <View style={styles.settingRow}>
-            <View style={styles.settingTextWrap}>
-              <Text style={styles.settingTitle}>Dark mode</Text>
-              <Text style={styles.settingDescription}>Switch to a darker app appearance.</Text>
-            </View>
+            <Text style={[styles.settingLabel, styles.settingLabelFlex]}>
+              Dark Mode
+            </Text>
             <Switch
               value={darkModeEnabled}
-              onValueChange={async (enabled) => {
-                const actionResult = await setDarkModeEnabled(enabled);
-                setSettingsFeedback(actionResult.message);
+              onValueChange={(v) => {
+                void setDarkModeEnabled(v);
               }}
-              thumbColor={darkModeEnabled ? palette.ivory : palette.white}
-              trackColor={{ false: palette.borderWarm, true: palette.terracotta }}
+              trackColor={{ false: palette.warmSand, true: palette.terracotta }}
+              thumbColor={palette.ivory}
             />
           </View>
 
-          {settingsFeedback ? <Text style={styles.meta}>{settingsFeedback}</Text> : null}
+          <SettingRow
+            label="Notifications"
+            onPress={() => handlePlaceholder('Notifications')}
+            c={c}
+            styles={styles}
+          />
+
+          {/* Share — copies to clipboard (keeps transient feedback) */}
+          <SettingRow
+            label="Share actbl"
+            description={shareCopied ? 'Link copied!' : undefined}
+            descriptionAccent={shareCopied}
+            rightIcon={shareCopied ? 'checkmark' : 'copy-outline'}
+            onPress={() => {
+              void handleShareCopy();
+            }}
+            c={c}
+            styles={styles}
+          />
+
+          <SettingRow
+            label="About"
+            onPress={handleAbout}
+            c={c}
+            styles={styles}
+          />
+          <SettingRow
+            label="Reset local data"
+            onPress={handleResetData}
+            c={c}
+            styles={styles}
+          />
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.subHeading}>Danger Zone</Text>
-          <Text style={styles.settingDescription}>
-            Delete your account and all related data permanently.
-          </Text>
+        {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+
+        {/* Auth actions */}
+        <View style={styles.authActions}>
           <Pressable
-            style={styles.deleteAccountButton}
-            onPress={() => {
-              Alert.alert(
-                'Delete account?',
-                'This permanently removes your account and data. This cannot be undone.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete account',
-                    style: 'destructive',
-                    onPress: () => {
-                      void (async () => {
-                        const actionResult = await deleteAccount();
-                        setSettingsFeedback(actionResult.message);
-                      })();
-                    },
-                  },
-                ],
-              );
-            }}
+            style={({ pressed }) => [
+              styles.dangerButton,
+              pressed && styles.dangerButtonPressed,
+            ]}
+            onPress={handleSignOut}
           >
-            <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
+            <Text style={styles.dangerText}>Sign Out</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.dangerButton,
+              styles.dangerButtonMuted,
+              pressed && styles.dangerButtonPressed,
+            ]}
+            onPress={() => handlePlaceholder('Delete Account')}
+          >
+            <Text style={styles.dangerText}>Delete Account</Text>
           </Pressable>
         </View>
 
-        <Pressable style={styles.signOutButton} onPress={() => void signOut()}>
-          <Text style={styles.signOutButtonText}>Sign Out</Text>
-        </Pressable>
+        <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Themed dialogs */}
+      <ThemedDialog
+        visible={dialog.kind === 'placeholder'}
+        title={dialog.kind === 'placeholder' ? dialog.name : ''}
+        message="Coming soon."
+        actions={[{ label: 'OK', variant: 'primary', onPress: closeDialog }]}
+        onRequestClose={closeDialog}
+      />
+      <ThemedDialog
+        visible={dialog.kind === 'about'}
+        title="About actbl"
+        message={`Version ${version}\n\nA focused weekly accountability tool.\n\n${SHARE_URL}`}
+        actions={[{ label: 'Close', variant: 'primary', onPress: closeDialog }]}
+        onRequestClose={closeDialog}
+      />
+      <ThemedDialog
+        visible={dialog.kind === 'confirmReset'}
+        title="Reset all local data?"
+        message="This will permanently delete your tasks, friends, pokes, and check-ins. This can't be undone."
+        actions={[
+          { label: 'Cancel', variant: 'secondary', onPress: closeDialog },
+          {
+            label: 'Reset',
+            variant: 'destructive',
+            onPress: () => {
+              void confirmReset();
+            },
+          },
+        ]}
+        onRequestClose={closeDialog}
+      />
+      <ThemedDialog
+        visible={dialog.kind === 'confirmSignOut'}
+        title="Sign out?"
+        message="You'll be signed out on this device. Your data is safe and will be there when you sign back in."
+        actions={[
+          { label: 'Cancel', variant: 'secondary', onPress: closeDialog },
+          {
+            label: 'Sign out',
+            variant: 'destructive',
+            onPress: () => {
+              void confirmSignOut();
+            },
+          },
+        ]}
+        onRequestClose={closeDialog}
+      />
+      <ReminderTimePickerDialog
+        visible={dialog.kind === 'reminderTime'}
+        initialHour={dailyReminderHour}
+        initialMinute={dailyReminderMinute}
+        onCancel={closeDialog}
+        onSave={async (h, m) => {
+          const r = await setDailyReminderTime(h, m);
+          setFeedback(r.message);
+          closeDialog();
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-function createStyles(darkModeEnabled: boolean) {
-  const surface = darkModeEnabled ? '#111315' : palette.parchment;
-  const card = darkModeEnabled ? '#1a1d20' : palette.white;
-  const cardBorder = darkModeEnabled ? '#2b2f35' : '#dfd7c8';
-  const primaryText = darkModeEnabled ? '#f2f2f2' : palette.nearBlack;
-  const secondaryText = darkModeEnabled ? '#b3bac3' : palette.oliveGray;
-  const mutedText = darkModeEnabled ? '#8f97a3' : palette.stoneGray;
+function ReminderTimePickerDialog({
+  visible,
+  initialHour,
+  initialMinute,
+  onCancel,
+  onSave,
+}: {
+  visible: boolean;
+  initialHour: number;
+  initialMinute: number;
+  onCancel: () => void;
+  onSave: (hour: number, minute: number) => void | Promise<void>;
+}) {
+  const { darkModeEnabled } = useAppContext();
+  const c = getThemeColors(darkModeEnabled);
+  const styles = useMemo(() => createPickerStyles(c), [c]);
 
+  const [hour24, setHour24] = useState(initialHour);
+  const [minute, setMinute] = useState(initialMinute);
+
+  // Re-seed local state whenever the dialog opens.
+  useEffect(() => {
+    if (visible) {
+      setHour24(initialHour);
+      setMinute(initialMinute);
+    }
+  }, [visible, initialHour, initialMinute]);
+
+  const isPm = hour24 >= 12;
+  const hour12 = ((hour24 + 11) % 12) + 1;
+
+  function setHour12(next12: number) {
+    const wrapped = ((next12 - 1 + 12) % 12) + 1; // 1..12
+    const next24 = (wrapped % 12) + (isPm ? 12 : 0);
+    setHour24(next24);
+  }
+
+  function setAmPm(nextIsPm: boolean) {
+    if (nextIsPm === isPm) return;
+    setHour24((prev) => (nextIsPm ? prev + 12 : prev - 12));
+  }
+
+  function bumpHour(delta: number) {
+    setHour12(hour12 + delta);
+  }
+
+  function bumpMinute(delta: number) {
+    setMinute((prev) => {
+      const next = prev + delta;
+      return ((next % 60) + 60) % 60;
+    });
+  }
+
+  function handleHourInput(raw: string) {
+    if (raw === '') {
+      setHour12(12);
+      return;
+    }
+    const parsed = Number(raw.replace(/\D/g, ''));
+    if (!Number.isFinite(parsed)) return;
+    const clamped = Math.max(1, Math.min(12, parsed));
+    setHour12(clamped);
+  }
+
+  function handleMinuteInput(raw: string) {
+    if (raw === '') {
+      setMinute(0);
+      return;
+    }
+    const parsed = Number(raw.replace(/\D/g, ''));
+    if (!Number.isFinite(parsed)) return;
+    setMinute(Math.max(0, Math.min(59, parsed)));
+  }
+
+  return (
+    <ThemedDialog
+      visible={visible}
+      title="Reminder time"
+      message="When should we remind you each day?"
+      onRequestClose={onCancel}
+      actions={[
+        { label: 'Cancel', variant: 'secondary', onPress: onCancel },
+        {
+          label: 'Save',
+          variant: 'primary',
+          onPress: () => {
+            void onSave(hour24, minute);
+          },
+        },
+      ]}
+    >
+      <View style={styles.pickerRow}>
+        <View style={styles.pickerColumn}>
+          <Pressable
+            onPress={() => bumpHour(1)}
+            style={({ pressed }) => [
+              styles.bumpButton,
+              pressed && styles.bumpButtonPressed,
+            ]}
+            accessibilityLabel="Increase hour"
+          >
+            <Ionicons name="chevron-up" size={20} color={c.textSecondary} />
+          </Pressable>
+          <TextInput
+            value={String(hour12)}
+            onChangeText={handleHourInput}
+            keyboardType="number-pad"
+            maxLength={2}
+            style={styles.pickerInput}
+            selectTextOnFocus
+          />
+          <Pressable
+            onPress={() => bumpHour(-1)}
+            style={({ pressed }) => [
+              styles.bumpButton,
+              pressed && styles.bumpButtonPressed,
+            ]}
+            accessibilityLabel="Decrease hour"
+          >
+            <Ionicons name="chevron-down" size={20} color={c.textSecondary} />
+          </Pressable>
+        </View>
+
+        <Text style={styles.pickerSeparator}>:</Text>
+
+        <View style={styles.pickerColumn}>
+          <Pressable
+            onPress={() => bumpMinute(5)}
+            style={({ pressed }) => [
+              styles.bumpButton,
+              pressed && styles.bumpButtonPressed,
+            ]}
+            accessibilityLabel="Increase minute"
+          >
+            <Ionicons name="chevron-up" size={20} color={c.textSecondary} />
+          </Pressable>
+          <TextInput
+            value={String(minute).padStart(2, '0')}
+            onChangeText={handleMinuteInput}
+            keyboardType="number-pad"
+            maxLength={2}
+            style={styles.pickerInput}
+            selectTextOnFocus
+          />
+          <Pressable
+            onPress={() => bumpMinute(-5)}
+            style={({ pressed }) => [
+              styles.bumpButton,
+              pressed && styles.bumpButtonPressed,
+            ]}
+            accessibilityLabel="Decrease minute"
+          >
+            <Ionicons name="chevron-down" size={20} color={c.textSecondary} />
+          </Pressable>
+        </View>
+
+        <View style={styles.ampmColumn}>
+          <Pressable
+            onPress={() => setAmPm(false)}
+            style={[
+              styles.ampmButton,
+              !isPm && styles.ampmButtonActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.ampmText,
+                !isPm && styles.ampmTextActive,
+              ]}
+            >
+              AM
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setAmPm(true)}
+            style={[
+              styles.ampmButton,
+              isPm && styles.ampmButtonActive,
+            ]}
+          >
+            <Text
+              style={[
+                styles.ampmText,
+                isPm && styles.ampmTextActive,
+              ]}
+            >
+              PM
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </ThemedDialog>
+  );
+}
+
+function createPickerStyles(c: ReturnType<typeof getThemeColors>) {
+  return StyleSheet.create({
+    pickerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.md,
+      paddingVertical: space.sm,
+    },
+    pickerColumn: {
+      alignItems: 'center',
+      gap: 4,
+    },
+    bumpButton: {
+      width: 44,
+      height: 32,
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    bumpButtonPressed: {
+      backgroundColor: c.surfaceActive,
+    },
+    pickerInput: {
+      ...text.displayHero,
+      fontSize: 32,
+      lineHeight: 36,
+      color: c.textPrimary,
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.md,
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      minWidth: 64,
+      textAlign: 'center',
+    },
+    pickerSeparator: {
+      ...text.displayHero,
+      fontSize: 32,
+      lineHeight: 36,
+      color: c.textPrimary,
+    },
+    ampmColumn: {
+      flexDirection: 'column',
+      gap: 4,
+      marginLeft: space.sm,
+    },
+    ampmButton: {
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.background,
+      minWidth: 56,
+      alignItems: 'center',
+    },
+    ampmButtonActive: {
+      backgroundColor: c.brand,
+      borderColor: c.brand,
+    },
+    ampmText: {
+      ...text.label,
+      color: c.textSecondary,
+    },
+    ampmTextActive: {
+      color: c.brandText,
+    },
+  });
+}
+
+function SettingRow({
+  label,
+  description,
+  descriptionAccent,
+  rightIcon,
+  onPress,
+  c,
+  styles,
+}: {
+  label: string;
+  description?: string;
+  descriptionAccent?: boolean;
+  rightIcon?: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  c: ReturnType<typeof getThemeColors>;
+  styles: ReturnType<typeof createStyles>;
+}) {
+  const iconName = rightIcon ?? 'chevron-forward';
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.settingRow,
+        pressed && styles.settingRowPressed,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.settingTextBlock}>
+        <Text style={styles.settingLabel}>{label}</Text>
+        {description ? (
+          <Text
+            style={[
+              styles.settingDescription,
+              descriptionAccent && styles.settingDescriptionAccent,
+            ]}
+          >
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons
+        name={iconName}
+        size={20}
+        color={descriptionAccent ? c.brand : c.textSecondary}
+      />
+    </Pressable>
+  );
+}
+
+function createStyles(c: ReturnType<typeof getThemeColors>) {
   return StyleSheet.create({
     root: {
       flex: 1,
-      backgroundColor: surface,
+      backgroundColor: c.background,
     },
-  content: {
-    padding: 16,
-    paddingTop: 22,
-    gap: 14,
-    paddingBottom: 40,
-  },
-  card: {
-    backgroundColor: card,
-    borderWidth: 1,
-    borderColor: cardBorder,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 18,
-  },
-  heroCard: {
-    backgroundColor: palette.nearBlack,
-    borderColor: palette.darkSurface,
-    shadowOpacity: 0.2,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  kicker: {
-    fontFamily: typography.sans,
-    fontSize: 11,
-    letterSpacing: 0.5,
-    color: palette.stoneGray,
-  },
-  sectionTitle: {
-    fontFamily: typography.serif,
-    fontSize: 32,
-    color: palette.nearBlack,
-    lineHeight: 38,
-  },
-  heroKicker: {
-    color: palette.warmSilver,
-  },
-  heroTitle: {
-    color: palette.ivory,
-  },
-  heroMeta: {
-    color: palette.warmSilver,
-  },
-  subHeading: {
-    fontFamily: typography.serif,
-    fontSize: 24,
-    color: primaryText,
-    lineHeight: 30,
-  },
-  name: {
-    fontFamily: typography.serif,
-    fontSize: 29,
-    color: primaryText,
-  },
-  email: {
-    color: secondaryText,
-    fontFamily: typography.sans,
-    fontSize: 15,
-  },
-  meta: {
-    color: secondaryText,
-    fontSize: 15,
-    fontFamily: typography.sans,
-    lineHeight: 24,
-  },
-  settingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 4,
-  },
-  settingTextWrap: {
-    flex: 1,
-    gap: 2,
-  },
-  settingTitle: {
-    fontFamily: typography.sans,
-    color: primaryText,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  settingDescription: {
-    fontFamily: typography.sans,
-    color: mutedText,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  deleteAccountButton: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: darkModeEnabled ? '#5a3a3a' : '#e0ccc6',
-    backgroundColor: card,
-    alignItems: 'center',
-    paddingVertical: 11,
-    marginTop: 6,
-  },
-  deleteAccountButtonText: {
-    color: palette.errorCrimson,
-    fontWeight: '600',
-    fontFamily: typography.sans,
-  },
-  signOutButton: {
-    backgroundColor: palette.darkSurface,
-    borderRadius: 12,
-    alignItems: 'center',
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderColor: palette.darkSurface,
-  },
-  signOutButtonText: {
-    color: palette.warmSilver,
-    fontWeight: '600',
-    fontSize: 16,
-    fontFamily: typography.sans,
-  },
+    scrollContent: {
+      paddingHorizontal: space.xl,
+      paddingTop: space.xl,
+      paddingBottom: space.section,
+    },
+    profileCard: {
+      backgroundColor: c.surface,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: space.xl,
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    avatarWrap: {
+      padding: 4,
+      borderRadius: 999,
+      borderWidth: 2,
+      borderColor: c.border,
+    },
+    avatar: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: c.surfaceActive,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    avatarText: {
+      ...text.displayHero,
+      fontSize: 40,
+      lineHeight: 44,
+      color: c.textPrimary,
+    },
+    name: {
+      ...text.subHeading,
+      color: c.textPrimary,
+      marginTop: space.sm,
+    },
+    handle: {
+      ...text.bodyStandard,
+      color: c.textSecondary,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      gap: space.md,
+      marginTop: space.base,
+      width: '100%',
+    },
+    statTile: {
+      flex: 1,
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.xl,
+      paddingVertical: space.base,
+      alignItems: 'center',
+      gap: 2,
+    },
+    statValue: {
+      ...text.featureTitle,
+      color: c.brand,
+    },
+    statLabel: {
+      ...text.caption,
+      color: c.textSecondary,
+    },
+    editTile: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    editTilePressed: {
+      backgroundColor: c.surfaceActive,
+    },
+    editTileLabel: {
+      ...text.bodyUiBold,
+      color: c.brand,
+    },
+    settingsList: {
+      marginTop: space.xl,
+      gap: space.md,
+    },
+    settingRow: {
+      backgroundColor: c.surface,
+      borderRadius: radius.xxl,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingVertical: space.sm,
+      paddingHorizontal: space.lg,
+      minHeight: 64,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    settingRowPressed: {
+      backgroundColor: c.surfaceActive,
+    },
+    settingTextBlock: {
+      flex: 1,
+      gap: 2,
+    },
+    settingLabel: {
+      ...text.bodyUiBold,
+      color: c.textPrimary,
+    },
+    settingLabelFlex: {
+      flex: 1,
+    },
+    timePill: {
+      backgroundColor: c.brand,
+      paddingHorizontal: space.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      marginRight: space.sm,
+    },
+    timePillPressed: {
+      opacity: 0.85,
+    },
+    timePillText: {
+      ...text.bodyUiBold,
+      color: c.brandText,
+    },
+    settingDescription: {
+      ...text.caption,
+      color: c.textSecondary,
+    },
+    settingDescriptionAccent: {
+      color: c.brand,
+    },
+    feedback: {
+      ...text.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: space.base,
+    },
+    authActions: {
+      flexDirection: 'row',
+      gap: space.md,
+      marginTop: space.xl,
+    },
+    dangerButton: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: c.error,
+      borderRadius: radius.pill,
+      paddingVertical: space.base,
+      alignItems: 'center',
+    },
+    dangerButtonMuted: {
+      borderColor: c.error + '55',
+    },
+    dangerButtonPressed: {
+      backgroundColor: c.error + '11',
+    },
+    dangerText: {
+      ...text.bodyUiBold,
+      color: c.error,
+    },
+    bottomSpacer: {
+      height: space.section,
+    },
   });
 }

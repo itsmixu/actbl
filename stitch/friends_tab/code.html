@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Friends - actbl</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Newsreader:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dark": "#1c1b19",
+                        "text-dark-primary": "#ede9df",
+                        "error-crimson": "#b53333",
+                        "tertiary-fixed-dim": "#6cd7d8",
+                        "on-surface-variant": "#56423c",
+                        "surface-container": "#fdeae4",
+                        "border-cream": "#f0eee6",
+                        "olive-gray": "#5e5d59",
+                        "on-tertiary-fixed": "#002020",
+                        "focus-blue": "#3898ec",
+                        "coral-accent": "#d97757",
+                        "secondary-fixed-dim": "#c8c7bd",
+                        "secondary": "#5f5f57",
+                        "outline-variant": "#dcc1b8",
+                        "tertiary-fixed": "#89f4f4",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#392e2b",
+                        "warm-sand": "#e8e6dc",
+                        "surface-dim": "#e9d6d1",
+                        "brand-dark": "#d4693e",
+                        "primary-fixed": "#ffdbd0",
+                        "on-secondary-container": "#65655d",
+                        "error": "#ba1a1a",
+                        "primary-container": "#b95837",
+                        "ivory-surface": "#faf9f5",
+                        "on-secondary": "#ffffff",
+                        "surface": "#fff8f6",
+                        "on-tertiary-container": "#f3fffe",
+                        "error-container": "#ffdad6",
+                        "primary": "#9a4021",
+                        "on-primary-fixed-variant": "#7e2c0e",
+                        "surface-container-high": "#f7e4df",
+                        "background": "#fff8f6",
+                        "on-primary-fixed": "#390b00",
+                        "surface-tint": "#9d4324",
+                        "on-surface": "#231916",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-low": "#fff1ed",
+                        "on-error": "#ffffff",
+                        "secondary-fixed": "#e5e3d9",
+                        "charcoal-warm": "#4d4c48",
+                        "on-primary-container": "#fffbff",
+                        "surface-bright": "#fff8f6",
+                        "tertiary": "#006768",
+                        "outline": "#89726b",
+                        "inverse-primary": "#ffb59d",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#474740",
+                        "inverse-on-surface": "#ffede8",
+                        "secondary-container": "#e5e3d9",
+                        "bg-dark": "#141413",
+                        "on-tertiary-fixed-variant": "#004f50",
+                        "tertiary-container": "#008283",
+                        "near-black-text": "#141413",
+                        "terracotta-brand": "#c96442",
+                        "on-background": "#231916",
+                        "primary-fixed-dim": "#ffb59d",
+                        "stone-gray": "#87867f",
+                        "on-secondary-fixed": "#1b1c16",
+                        "surface-variant": "#f1dfd9",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-highest": "#f1dfd9",
+                        "parchment-bg": "#f5f4ed"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "24": "24px",
+                        "16": "16px",
+                        "card-padding": "24px",
+                        "section-gap-md": "80px",
+                        "30": "30px",
+                        "20": "20px",
+                        "10": "10px",
+                        "3": "3px",
+                        "base": "8px",
+                        "8": "8px",
+                        "4": "4px",
+                        "section-gap-lg": "120px",
+                        "6": "6px",
+                        "12": "12px"
+                    },
+                    fontFamily: {
+                        "label": ["Inter"],
+                        "body-ui-bold": ["Inter"],
+                        "sub-heading-lg": ["Newsreader"],
+                        "body-large": ["Inter"],
+                        "display-hero": ["Newsreader"],
+                        "sub-heading": ["Newsreader"],
+                        "feature-title": ["Newsreader"],
+                        "section-heading": ["Newsreader"],
+                        "overline": ["Inter"],
+                        "body-standard": ["Inter"],
+                        "caption": ["Inter"]
+                    },
+                    fontSize: {
+                        "label": ["12px", { "lineHeight": "1.30", "letterSpacing": "0.12px", "fontWeight": "500" }],
+                        "body-ui-bold": ["16px", { "lineHeight": "1.25", "fontWeight": "500" }],
+                        "sub-heading-lg": ["36px", { "lineHeight": "1.30", "fontWeight": "500" }],
+                        "body-large": ["20px", { "lineHeight": "1.60", "fontWeight": "400" }],
+                        "display-hero": ["64px", { "lineHeight": "1.10", "fontWeight": "500" }],
+                        "sub-heading": ["32px", { "lineHeight": "1.10", "fontWeight": "500" }],
+                        "feature-title": ["20.8px", { "lineHeight": "1.20", "fontWeight": "500" }],
+                        "section-heading": ["52px", { "lineHeight": "1.20", "fontWeight": "500" }],
+                        "overline": ["10px", { "lineHeight": "1.60", "letterSpacing": "0.5px", "fontWeight": "400" }],
+                        "body-standard": ["16px", { "lineHeight": "1.60", "fontWeight": "400" }],
+                        "caption": ["14px", { "lineHeight": "1.43", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-parchment-bg text-on-surface antialiased min-h-screen flex flex-col pb-24">
+<!-- TopAppBar -->
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-2xl mx-auto px-8 py-10 md:py-16 flex flex-col gap-8">
+<!-- Header & Action -->
+<div class="flex items-center justify-center">
+<h2 class="font-sub-heading text-sub-heading text-near-black-text">Friends</h2>
+</div>
+<!-- Friend List -->
+<div class="flex flex-col gap-6 mt-8 items-center justify-center">
+<!-- Friend Card 1 -->
+<div class="bg-ivory-surface border border-border-cream rounded-[32px] p-16 flex items-center gap-16 transition-transform hover:-translate-y-px w-full">
+<img alt="Friend avatar" class="w-[48px] h-[48px] rounded-full object-cover shadow-sm" data-alt="A high quality circular portrait of a smiling woman. Warm, soft lighting emphasizing a natural, friendly atmosphere. Minimalist background to keep focus on the face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoPDai854coqdF2ljkQWYzIyWvLLERuBqOHqDg8vQ70ywHQ1u1VV9AMW_gGPJ6cUANq-jla9lBjgw4ScNGBoWKwM-ObG74A3bERXvjO770UMHVktehDz6bzk8pNd_WjJIrl78RHf7GDyUpyOT2Ok8q1Ol6R7zUqIQSWo0eyDY7O-dNF72oX6mit_lBgsIdGEfD-nPqhxPoOW2kulROv39h2eocSMR03zM7crPrOQD1xwiycC7_2uuJUwWedbXC5lzla39w36C4Aw"/>
+<div class="flex-1">
+<h3 class="font-body-large text-body-large text-near-black-text">Sarah Jenkins</h3>
+<p class="font-body-standard text-body-standard text-olive-gray mt-2 flex items-center gap-4">
+<span class="material-symbols-outlined text-[16px] text-terracotta-brand" data-icon="task_alt" data-weight="fill" style="font-variation-settings: 'FILL' 1;">task_alt</span>
+                        4/5 tasks done today
+                    </p>
+</div>
+<button class="p-8 rounded-full text-olive-gray hover:bg-warm-sand transition-colors ring-1 ring-border-cream">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Friend Card 2 -->
+<div class="bg-ivory-surface border border-border-cream rounded-[32px] p-16 flex items-center gap-16 transition-transform hover:-translate-y-px w-full">
+<div class="w-[48px] h-[48px] rounded-full bg-warm-sand flex items-center justify-center shadow-sm">
+<span class="font-body-ui-bold text-body-ui-bold text-charcoal-warm">MR</span>
+</div>
+<div class="flex-1">
+<h3 class="font-body-large text-body-large text-near-black-text">Marcus Rowe</h3>
+<p class="font-body-standard text-body-standard text-olive-gray mt-2 flex items-center gap-4">
+<span class="material-symbols-outlined text-[16px] text-stone-gray" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+                        0/3 tasks done today
+                    </p>
+</div>
+<button class="bg-terracotta-brand/10 text-terracotta-brand px-12 py-6 rounded-lg font-label text-label hover:bg-terracotta-brand/20 transition-colors"><span class="material-symbols-outlined">touch_app</span></button>
+</div>
+<!-- Friend Card 3 -->
+<div class="bg-ivory-surface border border-border-cream rounded-[32px] p-16 flex items-center gap-16 transition-transform hover:-translate-y-px w-full">
+<img alt="Friend avatar" class="w-[48px] h-[48px] rounded-full object-cover shadow-sm" data-alt="A high quality circular portrait of a confident man. Warm, soft lighting emphasizing a natural, friendly atmosphere. Minimalist background to keep focus on the face." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8kOSlPdNSdaf0vtq6QNU6NIG3D-uQXl3JaBTg1luJti5cBYN_Gp26gm6QAtV2pzB03GP2lOBQfiCo3BDcjXDS6jxH2TkH3RdC5mSfOv5VoLoj9UncsNAHcrENhZHIn7vHdS3byeVQ3uyh7IdMFAqisI3XthjWS2IYnsdeyPj9_AZIdOtO7mtDo9WCyxr2XIBtoSFTtqdPQZX9_Eir5T0tw7xRBukJzGBOO44uXXXKWRZ87_ddjGxGlNWUeTM_pNaDkQwfIvNiLg"/>
+<div class="flex-1">
+<h3 class="font-body-large text-body-large text-near-black-text">Elena Rostova</h3>
+<p class="font-body-standard text-body-standard text-olive-gray mt-2 flex items-center gap-4">
+<span class="material-symbols-outlined text-[16px] text-terracotta-brand" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        All tasks complete!
+                    </p>
+</div>
+<button class="bg-terracotta-brand/10 text-terracotta-brand px-12 py-6 rounded-lg font-label text-label hover:bg-terracotta-brand/20 transition-colors"><span class="material-symbols-outlined">celebration</span></button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<div class="fixed left-0 w-full px-8 flex flex-row gap-4 z-40 max-w-2xl mx-auto left-1/2 -translate-x-1/2 md:bottom-30 bottom-32">
+<button class="flex-1 bg-terracotta-brand text-on-primary py-12 rounded-[32px] font-body-ui-bold shadow-md hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">person_add</span>
+        Add Friends
+    </button>
+<button class="flex-1 bg-warm-sand text-on-secondary-fixed py-12 rounded-[32px] font-body-ui-bold shadow-sm hover:bg-secondary-fixed active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">qr_code_2</span>
+        QR Code
+    </button>
+</div><nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 bg-parchment-bg pb-safe md:hidden border-t border-border-cream flat no shadows">
+<a class="flex flex-col items-center justify-center text-terracotta-brand font-body-ui-bold hover:text-terracotta-brand active:ring-1 active:ring-terracotta-brand/10 transition-all flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="group">group</span>
+<span class="font-label text-label">Friends</span>
+</a>
+<a class="flex flex-col items-center justify-center text-olive-gray hover:text-terracotta-brand transition-all flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="assignment">assignment</span>
+<span class="font-label text-label">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-olive-gray hover:text-terracotta-brand transition-all flex-1 h-full" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span class="font-label text-label">You</span>
+</a>
+</nav>
+</body></html>

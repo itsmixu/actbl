@@ -32,6 +32,22 @@ export interface WeeklyTask {
   createdAt: string;
 }
 
+export interface WeeklyCheckIn {
+  id: string;
+  ownerId: string;
+  weekStartISO: string;
+  completedTaskIds: string[];
+  missedTaskIds: string[];
+  missedReason?: string | null;
+  nextWeekFocus?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WeeklyCheckInView extends WeeklyCheckIn {
+  ownerName: string;
+}
+
 export interface FriendRequestView {
   id: string;
   fromName: string;

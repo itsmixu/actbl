@@ -6,11 +6,9 @@ import React, {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 
-import { supabase } from '../lib/supabase';
 import {
   ActionResult,
   AppUser,
@@ -19,7 +17,10 @@ import {
   PokeStatus,
   PokeView,
   WeeklyTask,
+  WeeklyCheckIn,
+  WeeklyCheckInView,
 } from '../types';
+import { useAuth } from './AuthContext';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -30,22 +31,25 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const DAILY_REMINDER_ENABLED_STORAGE_KEY = '@actbl/reminders/enabled';
-const DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY = '@actbl/reminders/id';
-const DARK_MODE_ENABLED_STORAGE_KEY = '@actbl/theme/dark-mode-enabled';
+const STORAGE = {
+  profile: '@actbl/local/profile',
+  tasks: '@actbl/local/tasks',
+  checkIns: '@actbl/local/check-ins',
+  friends: '@actbl/local/friends',
+  outgoingRequests: '@actbl/local/outgoing-requests',
+  incomingRequests: '@actbl/local/incoming-requests',
+  pokes: '@actbl/local/pokes',
+  reminderEnabled: '@actbl/reminders/enabled',
+  reminderId: '@actbl/reminders/id',
+  reminderTime: '@actbl/reminders/time',
+  darkMode: '@actbl/theme/dark-mode-enabled',
+};
+
+const DEFAULT_REMINDER_HOUR = 19;
+const DEFAULT_REMINDER_MINUTE = 0;
+
 const POKE_NOTIFICATION_CATEGORY_ID = 'ACTBL_POKE_ACTIONS';
 const DEFAULT_POKE_MESSAGE = 'Quick poke: you got this. Are you on your tasks?';
-
-interface SignUpInput {
-  name: string;
-  email: string;
-  password: string;
-}
-
-interface SignInInput {
-  email: string;
-  password: string;
-}
 
 interface AppContextValue {
   isHydrated: boolean;
@@ -58,13 +62,13 @@ interface AppContextValue {
   incomingPokes: PokeView[];
   outgoingPokes: PokeView[];
   currentWeekTasks: WeeklyTask[];
+  currentWeekCheckIns: WeeklyCheckInView[];
+  myWeeklyCheckIn: WeeklyCheckIn | null;
   dailyReminderEnabled: boolean;
+  dailyReminderHour: number;
+  dailyReminderMinute: number;
   darkModeEnabled: boolean;
   defaultPokeMessage: string;
-  signUp: (input: SignUpInput) => Promise<ActionResult>;
-  signIn: (input: SignInInput) => Promise<ActionResult>;
-  signOut: () => Promise<ActionResult>;
-  deleteAccount: () => Promise<ActionResult>;
   rotateFriendCode: () => Promise<ActionResult>;
   sendFriendRequestByCode: (rawCode: string) => Promise<ActionResult>;
   acceptFriendRequest: (requestId: string) => Promise<ActionResult>;
@@ -72,60 +76,32 @@ interface AppContextValue {
   sendPoke: (friendId: string, message?: string) => Promise<ActionResult>;
   respondToPoke: (pokeId: string, status: Exclude<PokeStatus, 'pending'>) => Promise<ActionResult>;
   setDailyReminderEnabled: (enabled: boolean) => Promise<ActionResult>;
+  setDailyReminderTime: (hour: number, minute: number) => Promise<ActionResult>;
   setDarkModeEnabled: (enabled: boolean) => Promise<ActionResult>;
   createTask: (title: string, accountabilityFriendId?: string) => Promise<ActionResult>;
   toggleTask: (taskId: string) => Promise<ActionResult>;
   deleteTask: (taskId: string) => Promise<ActionResult>;
+  submitWeeklyCheckIn: (input: {
+    completedTaskIds: string[];
+    missedTaskIds: string[];
+    missedReason?: string;
+    nextWeekFocus?: string;
+  }) => Promise<ActionResult>;
+  resetLocalData: () => Promise<ActionResult>;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
-interface ProfileRow {
-  id: string;
-  name: string;
-  email: string;
-  friend_code: string;
+function result(ok: boolean, message: string): ActionResult {
+  return { ok, message };
 }
 
-interface FriendRequestRow {
-  id: string;
-  from_user_id: string;
-  to_user_id: string;
-  status: 'pending' | 'accepted' | 'declined';
-  created_at: string;
-  responded_at: string | null;
+function generateLocalId(): string {
+  return `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-interface FriendshipRow {
-  id: string;
-  user_low_id: string;
-  user_high_id: string;
-  created_at: string;
-}
-
-interface TaskRow {
-  id: string;
-  owner_id: string;
-  title: string;
-  completed: boolean;
-  week_start: string;
-  accountability_friend_id: string | null;
-  created_at: string;
-}
-
-interface PokeRow {
-  id: string;
-  sender_user_id: string;
-  recipient_user_id: string;
-  message: string;
-  status: PokeStatus;
-  response_message: string | null;
-  created_at: string;
-  responded_at: string | null;
-}
-
-function normalizeCode(rawCode: string): string {
-  return rawCode.replace(/\D/g, '').slice(0, 6);
+function generateFriendCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 function getCurrentWeekStartDateString(now = new Date()): string {
@@ -141,436 +117,186 @@ function weekStartDateToISO(weekStartDate: string): string {
   return `${weekStartDate}T00:00:00.000Z`;
 }
 
-function toPublicUser(profile: ProfileRow): AppUser {
+function normalizeCode(rawCode: string): string {
+  return rawCode.replace(/\D/g, '').slice(0, 6);
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  if (!Number.isFinite(value)) return min;
+  const rounded = Math.round(value);
+  if (rounded < min) return min;
+  if (rounded > max) return max;
+  return rounded;
+}
+
+function formatReminderTime(hour: number, minute: number): string {
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function parseReminderTime(raw: string | null): {
+  hour: number;
+  minute: number;
+} {
+  if (!raw) {
+    return { hour: DEFAULT_REMINDER_HOUR, minute: DEFAULT_REMINDER_MINUTE };
+  }
+  const match = raw.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (!match) {
+    return { hour: DEFAULT_REMINDER_HOUR, minute: DEFAULT_REMINDER_MINUTE };
+  }
   return {
-    id: profile.id,
-    name: profile.name,
-    email: profile.email,
-    friendCode: profile.friend_code,
+    hour: clampInt(Number(match[1]), 0, 23),
+    minute: clampInt(Number(match[2]), 0, 59),
   };
 }
 
-function result(ok: boolean, message: string): ActionResult {
-  return { ok, message };
-}
-
-function getUserPair(userAId: string, userBId: string): { lowId: string; highId: string } {
-  return userAId < userBId
-    ? { lowId: userAId, highId: userBId }
-    : { lowId: userBId, highId: userAId };
-}
-
-async function wait(milliseconds: number) {
-  await new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-async function fetchProfileWithRetry(userId: string): Promise<ProfileRow | null> {
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, name, email, friend_code')
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (data) {
-      return data as ProfileRow;
-    }
-
-    await wait(200 * (attempt + 1));
+async function readJson<T>(key: string, fallback: T): Promise<T> {
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) {
+    return fallback;
   }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
 
-  return null;
+async function writeJson<T>(key: string, value: T): Promise<void> {
+  await AsyncStorage.setItem(key, JSON.stringify(value));
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  // The signed-in identity now comes from Supabase via AuthContext.
+  // We expose it through AppContext as `currentUser` so existing screens
+  // keep working unchanged while the data layer migrates over.
+  const { user, profile: authProfile } = useAuth();
+  const currentUser: AppUser | null = useMemo(() => {
+    if (!authProfile || !user) return null;
+    return {
+      id: authProfile.id,
+      name: authProfile.name || 'You',
+      email: user.email ?? '',
+      friendCode: authProfile.friendCode,
+    };
+  }, [authProfile, user]);
+
   const [friends, setFriends] = useState<AppUser[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<FriendRequestView[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<OutgoingFriendRequestView[]>([]);
   const [incomingPokes, setIncomingPokes] = useState<PokeView[]>([]);
   const [outgoingPokes, setOutgoingPokes] = useState<PokeView[]>([]);
   const [currentWeekTasks, setCurrentWeekTasks] = useState<WeeklyTask[]>([]);
+  const [currentWeekCheckIns, setCurrentWeekCheckIns] = useState<WeeklyCheckInView[]>([]);
+  const [myWeeklyCheckIn, setMyWeeklyCheckIn] = useState<WeeklyCheckIn | null>(null);
   const [dailyReminderEnabled, setDailyReminderEnabledState] = useState(false);
+  const [dailyReminderHour, setDailyReminderHourState] = useState(
+    DEFAULT_REMINDER_HOUR,
+  );
+  const [dailyReminderMinute, setDailyReminderMinuteState] = useState(
+    DEFAULT_REMINDER_MINUTE,
+  );
   const [darkModeEnabled, setDarkModeEnabledState] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
-
-  const knownIncomingPokeIdsRef = useRef<Set<string>>(new Set());
-  const hasLoadedIncomingPokesRef = useRef(false);
 
   const weekStartDate = useMemo(() => getCurrentWeekStartDateString(), []);
   const weekStartISO = useMemo(() => weekStartDateToISO(weekStartDate), [weekStartDate]);
 
-  const clearUserData = useCallback(() => {
-    setCurrentUser(null);
-    setFriends([]);
-    setIncomingRequests([]);
-    setOutgoingRequests([]);
-    setIncomingPokes([]);
-    setOutgoingPokes([]);
-    setCurrentWeekTasks([]);
-    knownIncomingPokeIdsRef.current = new Set();
-    hasLoadedIncomingPokesRef.current = false;
-  }, []);
-
   const ensureNotificationsPermission = useCallback(async (): Promise<boolean> => {
     const settings = await Notifications.getPermissionsAsync();
-    if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+    if (
+      settings.granted ||
+      settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+    ) {
       return true;
     }
-
     const request = await Notifications.requestPermissionsAsync();
     return Boolean(
-      request.granted || request.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
+      request.granted ||
+        request.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL,
     );
   }, []);
 
-  const scheduleDailyReminder = useCallback(async (): Promise<string | null> => {
-    const hasPermission = await ensureNotificationsPermission();
-    if (!hasPermission) {
-      return null;
-    }
-
-    const notificationId = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: 'ACTBL Daily Check-In',
-        body: 'Keep your streak going. Make progress on your weekly tasks today.',
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: 19,
-        minute: 0,
-      },
-    });
-
-    return notificationId;
-  }, [ensureNotificationsPermission]);
-
-  const syncDailyReminderSchedule = useCallback(
-    async (enabled: boolean): Promise<ActionResult> => {
-      const existingId = await AsyncStorage.getItem(DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY);
-
-      if (!enabled) {
-        if (existingId) {
-          await Notifications.cancelScheduledNotificationAsync(existingId);
-        }
-        await AsyncStorage.removeItem(DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY);
-        await AsyncStorage.setItem(DAILY_REMINDER_ENABLED_STORAGE_KEY, 'false');
-        return result(true, 'Daily reminder disabled.');
+  const scheduleDailyReminder = useCallback(
+    async (hour: number, minute: number): Promise<string | null> => {
+      const ok = await ensureNotificationsPermission();
+      if (!ok) {
+        return null;
       }
-
-      const reminderId = await scheduleDailyReminder();
-      if (!reminderId) {
-        return result(false, 'Notification permission is required for daily reminders.');
-      }
-
-      if (existingId) {
-        await Notifications.cancelScheduledNotificationAsync(existingId);
-      }
-
-      await AsyncStorage.setItem(DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY, reminderId);
-      await AsyncStorage.setItem(DAILY_REMINDER_ENABLED_STORAGE_KEY, 'true');
-      return result(true, 'Daily reminder enabled.');
+      return Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'ACTBL Daily Check-In',
+          body: 'Keep your streak going. Make progress on your weekly tasks today.',
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        },
+      });
     },
-    [scheduleDailyReminder],
+    [ensureNotificationsPermission],
   );
 
-  const refreshData = useCallback(
-    async (explicitUserId?: string): Promise<ActionResult> => {
-      const targetUserId = explicitUserId ?? currentUserId;
-      if (!targetUserId) {
-        clearUserData();
-        return result(false, 'No authenticated user.');
-      }
+  const refreshLocalData = useCallback(async () => {
+    const allTasks = await readJson<WeeklyTask[]>(STORAGE.tasks, []);
+    const weekTasks = allTasks
+      .filter((task) => task.weekStartISO === weekStartISO)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    setCurrentWeekTasks(weekTasks);
 
-      try {
-        const profile = await fetchProfileWithRetry(targetUserId);
+    const allCheckIns = await readJson<WeeklyCheckIn[]>(STORAGE.checkIns, []);
+    const myCheckIn = allCheckIns.find((c) => c.weekStartISO === weekStartISO) ?? null;
+    setMyWeeklyCheckIn(myCheckIn);
+    setCurrentWeekCheckIns(
+      myCheckIn ? [{ ...myCheckIn, ownerName: 'You' }] : [],
+    );
 
-        if (!profile) {
-          clearUserData();
-          return result(false, 'Profile not ready yet.');
-        }
+    const friendList = await readJson<AppUser[]>(STORAGE.friends, []);
+    setFriends(friendList);
 
-        const [friendRequestResponse, friendshipResponse, taskResponse, pokeResponse] = await Promise.all([
-          supabase
-            .from('friend_requests')
-            .select('id, from_user_id, to_user_id, status, created_at, responded_at')
-            .or(`from_user_id.eq.${targetUserId},to_user_id.eq.${targetUserId}`)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('friendships')
-            .select('id, user_low_id, user_high_id, created_at')
-            .or(`user_low_id.eq.${targetUserId},user_high_id.eq.${targetUserId}`)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('tasks')
-            .select('id, owner_id, title, completed, week_start, accountability_friend_id, created_at')
-            .eq('owner_id', targetUserId)
-            .eq('week_start', weekStartDate)
-            .order('created_at', { ascending: false }),
-          supabase
-            .from('pokes')
-            .select(
-              'id, sender_user_id, recipient_user_id, message, status, response_message, created_at, responded_at',
-            )
-            .or(`sender_user_id.eq.${targetUserId},recipient_user_id.eq.${targetUserId}`)
-            .order('created_at', { ascending: false }),
-        ]);
+    const incoming = await readJson<FriendRequestView[]>(STORAGE.incomingRequests, []);
+    setIncomingRequests(incoming);
+    const outgoing = await readJson<OutgoingFriendRequestView[]>(STORAGE.outgoingRequests, []);
+    setOutgoingRequests(outgoing);
 
-        if (friendRequestResponse.error) {
-          throw friendRequestResponse.error;
-        }
-        if (friendshipResponse.error) {
-          throw friendshipResponse.error;
-        }
-        if (taskResponse.error) {
-          throw taskResponse.error;
-        }
-        if (pokeResponse.error) {
-          throw pokeResponse.error;
-        }
-
-        const friendRequests = (friendRequestResponse.data ?? []) as FriendRequestRow[];
-        const friendships = (friendshipResponse.data ?? []) as FriendshipRow[];
-        const tasks = (taskResponse.data ?? []) as TaskRow[];
-        const pokes = (pokeResponse.data ?? []) as PokeRow[];
-
-        const profileIds = new Set<string>([targetUserId]);
-
-        for (const request of friendRequests) {
-          profileIds.add(request.from_user_id);
-          profileIds.add(request.to_user_id);
-        }
-
-        const friendIds = new Set<string>();
-        for (const friendship of friendships) {
-          const friendId =
-            friendship.user_low_id === targetUserId
-              ? friendship.user_high_id
-              : friendship.user_low_id;
-          profileIds.add(friendId);
-          friendIds.add(friendId);
-        }
-
-        for (const task of tasks) {
-          if (task.accountability_friend_id) {
-            profileIds.add(task.accountability_friend_id);
-          }
-        }
-
-        for (const poke of pokes) {
-          profileIds.add(poke.sender_user_id);
-          profileIds.add(poke.recipient_user_id);
-        }
-
-        const allProfileIds = Array.from(profileIds);
-        const profileLookup = new Map<string, ProfileRow>();
-        profileLookup.set(profile.id, profile);
-
-        if (allProfileIds.length > 0) {
-          const { data: profileRows, error: profileRowsError } = await supabase
-            .from('profiles')
-            .select('id, name, email, friend_code')
-            .in('id', allProfileIds);
-
-          if (profileRowsError) {
-            throw profileRowsError;
-          }
-
-          for (const profileRow of (profileRows ?? []) as ProfileRow[]) {
-            profileLookup.set(profileRow.id, profileRow);
-          }
-        }
-
-        const nextFriends = Array.from(friendIds)
-          .map((friendId) => profileLookup.get(friendId))
-          .filter((candidate): candidate is ProfileRow => Boolean(candidate))
-          .map((candidate) => toPublicUser(candidate))
-          .sort((a, b) => a.name.localeCompare(b.name));
-
-        const nextIncoming = friendRequests
-          .filter((request) => request.status === 'pending' && request.to_user_id === targetUserId)
-          .map((request) => {
-            const fromProfile = profileLookup.get(request.from_user_id);
-            return {
-              id: request.id,
-              fromName: fromProfile?.name ?? 'Unknown user',
-              fromEmail: fromProfile?.email ?? 'unknown@example.com',
-              createdAt: request.created_at,
-            };
-          });
-
-        const nextOutgoing = friendRequests
-          .filter((request) => request.status === 'pending' && request.from_user_id === targetUserId)
-          .map((request) => {
-            const toProfile = profileLookup.get(request.to_user_id);
-            return {
-              id: request.id,
-              toName: toProfile?.name ?? 'Unknown user',
-              toEmail: toProfile?.email ?? 'unknown@example.com',
-              createdAt: request.created_at,
-            };
-          });
-
-        const nextTasks: WeeklyTask[] = tasks.map((task) => ({
-          id: task.id,
-          ownerId: task.owner_id,
-          title: task.title,
-          completed: task.completed,
-          weekStartISO: weekStartDateToISO(task.week_start),
-          accountabilityFriendId: task.accountability_friend_id ?? undefined,
-          createdAt: task.created_at,
-        }));
-
-        const nextIncomingPokes: PokeView[] = pokes
-          .filter((poke) => poke.recipient_user_id === targetUserId)
-          .map((poke) => {
-            const fromProfile = profileLookup.get(poke.sender_user_id);
-            const toProfile = profileLookup.get(poke.recipient_user_id);
-            return {
-              id: poke.id,
-              fromUserId: poke.sender_user_id,
-              fromName: fromProfile?.name ?? 'Unknown user',
-              toUserId: poke.recipient_user_id,
-              toName: toProfile?.name ?? 'You',
-              message: poke.message,
-              status: poke.status,
-              createdAt: poke.created_at,
-              respondedAt: poke.responded_at,
-            };
-          })
-          .sort((a, b) => {
-            const aPriority = a.status === 'pending' ? 0 : 1;
-            const bPriority = b.status === 'pending' ? 0 : 1;
-            if (aPriority !== bPriority) {
-              return aPriority - bPriority;
-            }
-            return b.createdAt.localeCompare(a.createdAt);
-          });
-
-        const nextOutgoingPokes: PokeView[] = pokes
-          .filter((poke) => poke.sender_user_id === targetUserId)
-          .map((poke) => {
-            const fromProfile = profileLookup.get(poke.sender_user_id);
-            const toProfile = profileLookup.get(poke.recipient_user_id);
-            return {
-              id: poke.id,
-              fromUserId: poke.sender_user_id,
-              fromName: fromProfile?.name ?? 'You',
-              toUserId: poke.recipient_user_id,
-              toName: toProfile?.name ?? 'Unknown user',
-              message: poke.message,
-              status: poke.status,
-              createdAt: poke.created_at,
-              respondedAt: poke.responded_at,
-            };
-          })
-          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-
-        const pendingIncomingPokes = nextIncomingPokes.filter((poke) => poke.status === 'pending');
-
-        if (!hasLoadedIncomingPokesRef.current) {
-          hasLoadedIncomingPokesRef.current = true;
-          knownIncomingPokeIdsRef.current = new Set(pendingIncomingPokes.map((poke) => poke.id));
-        } else {
-          const hasNotificationPermission = await ensureNotificationsPermission();
-
-          for (const poke of pendingIncomingPokes) {
-            if (knownIncomingPokeIdsRef.current.has(poke.id)) {
-              continue;
-            }
-
-            knownIncomingPokeIdsRef.current.add(poke.id);
-
-            if (hasNotificationPermission) {
-              await Notifications.scheduleNotificationAsync({
-                content: {
-                  title: `Poke from ${poke.fromName}`,
-                  body: poke.message,
-                  data: { pokeId: poke.id },
-                  categoryIdentifier: POKE_NOTIFICATION_CATEGORY_ID,
-                },
-                trigger: null,
-              });
-            }
-          }
-
-          const pendingIdSet = new Set(pendingIncomingPokes.map((poke) => poke.id));
-          for (const knownId of Array.from(knownIncomingPokeIdsRef.current)) {
-            if (!pendingIdSet.has(knownId)) {
-              knownIncomingPokeIdsRef.current.delete(knownId);
-            }
-          }
-        }
-
-        setCurrentUser(toPublicUser(profile));
-        setFriends(nextFriends);
-        setIncomingRequests(nextIncoming);
-        setOutgoingRequests(nextOutgoing);
-        setIncomingPokes(nextIncomingPokes);
-        setOutgoingPokes(nextOutgoingPokes);
-        setCurrentWeekTasks(nextTasks);
-
-        return result(true, 'Data refreshed.');
-      } catch (error) {
-        const message = error instanceof Error ? error.message : 'Failed to refresh data.';
-        return result(false, message);
-      }
-    },
-    [clearUserData, currentUserId, ensureNotificationsPermission, weekStartDate],
-  );
-
-  const respondToPoke = useCallback(
-    async (pokeId: string, status: Exclude<PokeStatus, 'pending'>): Promise<ActionResult> => {
-      if (!currentUserId) {
-        return result(false, 'Sign in first.');
-      }
-
-      const { error } = await supabase
-        .from('pokes')
-        .update({ status, responded_at: new Date().toISOString(), response_message: null })
-        .eq('id', pokeId)
-        .eq('recipient_user_id', currentUserId)
-        .eq('status', 'pending');
-
-      if (error) {
-        return result(false, error.message);
-      }
-
-      await refreshData(currentUserId);
-      if (status === 'on_it') {
-        return result(true, 'Marked as on it.');
-      }
-      return result(true, 'Marked as later.');
-    },
-    [currentUserId, refreshData],
-  );
+    const allPokes = await readJson<PokeView[]>(STORAGE.pokes, []);
+    const profile = await readJson<AppUser | null>(STORAGE.profile, null);
+    const myId = profile?.id ?? '';
+    setIncomingPokes(
+      allPokes
+        .filter((poke) => poke.toUserId === myId)
+        .sort((a, b) => {
+          const ap = a.status === 'pending' ? 0 : 1;
+          const bp = b.status === 'pending' ? 0 : 1;
+          if (ap !== bp) return ap - bp;
+          return b.createdAt.localeCompare(a.createdAt);
+        }),
+    );
+    setOutgoingPokes(
+      allPokes
+        .filter((poke) => poke.fromUserId === myId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    );
+  }, [weekStartISO]);
 
   useEffect(() => {
     let mounted = true;
 
-    async function hydrateAuth() {
-      const { data } = await supabase.auth.getSession();
-      const reminderEnabled = (await AsyncStorage.getItem(DAILY_REMINDER_ENABLED_STORAGE_KEY)) === 'true';
-      const darkModeEnabledStored = (await AsyncStorage.getItem(DARK_MODE_ENABLED_STORAGE_KEY)) === 'true';
-
-      setDailyReminderEnabledState(reminderEnabled);
-      setDarkModeEnabledState(darkModeEnabledStored);
+    async function hydrate() {
+      const reminderEnabled =
+        (await AsyncStorage.getItem(STORAGE.reminderEnabled)) === 'true';
+      const reminderTimeRaw = await AsyncStorage.getItem(STORAGE.reminderTime);
+      const { hour: storedHour, minute: storedMinute } =
+        parseReminderTime(reminderTimeRaw);
+      const dark = (await AsyncStorage.getItem(STORAGE.darkMode)) === 'true';
 
       if (reminderEnabled) {
-        const existingReminderId = await AsyncStorage.getItem(
-          DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY,
-        );
-        if (!existingReminderId) {
-          const reminderId = await scheduleDailyReminder();
-          if (reminderId) {
-            await AsyncStorage.setItem(DAILY_REMINDER_NOTIFICATION_ID_STORAGE_KEY, reminderId);
+        const existing = await AsyncStorage.getItem(STORAGE.reminderId);
+        if (!existing) {
+          const id = await scheduleDailyReminder(storedHour, storedMinute);
+          if (id) {
+            await AsyncStorage.setItem(STORAGE.reminderId, id);
           }
         }
       }
@@ -579,406 +305,106 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setCurrentUserId(data.session?.user.id ?? null);
+      setDailyReminderEnabledState(reminderEnabled);
+      setDailyReminderHourState(storedHour);
+      setDailyReminderMinuteState(storedMinute);
+      setDarkModeEnabledState(dark);
       setIsHydrated(true);
     }
 
-    void hydrateAuth();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setCurrentUserId(session?.user.id ?? null);
-    });
+    void hydrate();
 
     return () => {
       mounted = false;
-      subscription.unsubscribe();
     };
   }, [scheduleDailyReminder]);
 
   useEffect(() => {
-    void Notifications.setNotificationCategoryAsync(POKE_NOTIFICATION_CATEGORY_ID, [
-      {
-        identifier: 'POKE_ON_IT',
-        buttonTitle: "I'm on it",
-      },
-      {
-        identifier: 'POKE_LATER',
-        buttonTitle: 'Later',
-      },
-    ]);
-
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      if (!currentUserId) {
-        return;
-      }
-
-      const actionId = response.actionIdentifier;
-      if (actionId !== 'POKE_ON_IT' && actionId !== 'POKE_LATER') {
-        return;
-      }
-
-      const pokeIdRaw = response.notification.request.content.data?.pokeId;
-      if (!pokeIdRaw || typeof pokeIdRaw !== 'string') {
-        return;
-      }
-
-      const nextStatus: Exclude<PokeStatus, 'pending'> = actionId === 'POKE_ON_IT' ? 'on_it' : 'later';
-      void respondToPoke(pokeIdRaw, nextStatus);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [currentUserId, respondToPoke]);
+    if (!isHydrated || !currentUser) {
+      return;
+    }
+    void refreshLocalData();
+  }, [isHydrated, currentUser, refreshLocalData]);
 
   useEffect(() => {
-    if (!isHydrated) {
-      return;
-    }
+    void Notifications.setNotificationCategoryAsync(POKE_NOTIFICATION_CATEGORY_ID, [
+      { identifier: 'POKE_ON_IT', buttonTitle: "I'm on it" },
+      { identifier: 'POKE_LATER', buttonTitle: 'Later' },
+    ]);
+  }, []);
 
-    if (!currentUserId) {
-      clearUserData();
-      return;
-    }
-
-    void refreshData(currentUserId);
-
-    const channel = supabase
-      .channel(`actbl-realtime-${currentUserId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        void refreshData(currentUserId);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'friend_requests' }, () => {
-        void refreshData(currentUserId);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => {
-        void refreshData(currentUserId);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        void refreshData(currentUserId);
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pokes' }, () => {
-        void refreshData(currentUserId);
-      })
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [clearUserData, currentUserId, isHydrated, refreshData]);
-
-  async function signUp(input: SignUpInput): Promise<ActionResult> {
-    const name = input.name.trim();
-    const email = input.email.trim().toLowerCase();
-    const password = input.password.trim();
-
-    if (!name || !email || !password) {
-      return result(false, 'Please fill in name, email, and password.');
-    }
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-        },
-      },
-    });
-
-    if (error) {
-      return result(false, error.message);
-    }
-
-    const sessionUserId = data.session?.user?.id;
-    if (!sessionUserId) {
-      return result(true, 'Account created. Check your email, then sign in.');
-    }
-
-    setCurrentUserId(sessionUserId);
-    const refreshResult = await refreshData(sessionUserId);
-    if (!refreshResult.ok) {
-      return result(true, 'Account created. Profile will appear in a moment.');
-    }
-
-    return result(true, 'Account created and signed in.');
-  }
-
-  async function signIn(input: SignInInput): Promise<ActionResult> {
-    const email = input.email.trim().toLowerCase();
-    const password = input.password.trim();
-
-    if (!email || !password) {
-      return result(false, 'Please provide email and password.');
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      return result(false, error.message);
-    }
-
-    const nextUserId = data.user.id;
-    setCurrentUserId(nextUserId);
-    await refreshData(nextUserId);
-
-    return result(true, 'Signed in.');
-  }
-
-  async function signOut(): Promise<ActionResult> {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      return result(false, error.message);
-    }
-
-    setCurrentUserId(null);
-    clearUserData();
-    return result(true, 'Signed out.');
-  }
-
-  async function deleteAccount(): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    await syncDailyReminderSchedule(false);
-
-    const { error } = await supabase.rpc('delete_my_account');
-    if (error) {
-      const missingFunction = /delete_my_account/i.test(error.message)
-        && /does not exist|not find/i.test(error.message);
-      if (missingFunction) {
-        return result(false, 'Delete account is not enabled yet. Run the latest Supabase migration first.');
+  async function syncDailyReminder(
+    enabled: boolean,
+    hour: number,
+    minute: number,
+  ): Promise<ActionResult> {
+    const existing = await AsyncStorage.getItem(STORAGE.reminderId);
+    if (!enabled) {
+      if (existing) {
+        await Notifications.cancelScheduledNotificationAsync(existing);
       }
-      return result(false, error.message);
+      await AsyncStorage.removeItem(STORAGE.reminderId);
+      await AsyncStorage.setItem(STORAGE.reminderEnabled, 'false');
+      return result(true, 'Daily reminder disabled.');
     }
-
-    await supabase.auth.signOut();
-    setCurrentUserId(null);
-    setDailyReminderEnabledState(false);
-    clearUserData();
-
-    return result(true, 'Your account has been deleted.');
-  }
-
-  async function rotateFriendCode(): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in to rotate your code.');
+    const id = await scheduleDailyReminder(hour, minute);
+    if (!id) {
+      return result(false, 'Notification permission is required for daily reminders.');
     }
-
-    const { error } = await supabase.rpc('rotate_my_friend_code');
-
-    if (error) {
-      return result(false, error.message);
+    if (existing) {
+      await Notifications.cancelScheduledNotificationAsync(existing);
     }
-
-    await refreshData(currentUserId);
-
-    return result(true, 'Friend code rotated.');
-  }
-
-  async function sendFriendRequestByCode(rawCode: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    const normalized = normalizeCode(rawCode);
-    if (normalized.length !== 6) {
-      return result(false, 'Friend codes must be 6 digits.');
-    }
-
-    const { data: targetProfile, error: targetError } = await supabase
-      .from('profiles')
-      .select('id, name')
-      .eq('friend_code', normalized)
-      .maybeSingle();
-
-    if (targetError) {
-      return result(false, targetError.message);
-    }
-
-    if (!targetProfile) {
-      return result(false, 'No user found with that code.');
-    }
-
-    if (targetProfile.id === currentUserId) {
-      return result(false, 'That is your own code.');
-    }
-
-    const { lowId, highId } = getUserPair(currentUserId, targetProfile.id);
-
-    const { data: existingFriendship, error: friendshipError } = await supabase
-      .from('friendships')
-      .select('id')
-      .eq('user_low_id', lowId)
-      .eq('user_high_id', highId)
-      .maybeSingle();
-
-    if (friendshipError) {
-      return result(false, friendshipError.message);
-    }
-
-    if (existingFriendship) {
-      return result(false, 'You are already linked as friends.');
-    }
-
-    const duplicateFilter = [
-      `and(from_user_id.eq.${currentUserId},to_user_id.eq.${targetProfile.id})`,
-      `and(from_user_id.eq.${targetProfile.id},to_user_id.eq.${currentUserId})`,
-    ].join(',');
-
-    const { data: duplicateRequest, error: duplicateError } = await supabase
-      .from('friend_requests')
-      .select('id')
-      .eq('status', 'pending')
-      .or(duplicateFilter)
-      .maybeSingle();
-
-    if (duplicateError) {
-      return result(false, duplicateError.message);
-    }
-
-    if (duplicateRequest) {
-      return result(false, 'A pending request already exists between you.');
-    }
-
-    const { error: insertError } = await supabase.from('friend_requests').insert({
-      from_user_id: currentUserId,
-      to_user_id: targetProfile.id,
-      status: 'pending',
-    });
-
-    if (insertError) {
-      return result(false, insertError.message);
-    }
-
-    await refreshData(currentUserId);
-
-    return result(true, `Request sent to ${targetProfile.name}.`);
-  }
-
-  async function acceptFriendRequest(requestId: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    const { data: request, error: requestError } = await supabase
-      .from('friend_requests')
-      .select('id, from_user_id, to_user_id, status')
-      .eq('id', requestId)
-      .maybeSingle();
-
-    if (requestError) {
-      return result(false, requestError.message);
-    }
-
-    if (!request || request.status !== 'pending' || request.to_user_id !== currentUserId) {
-      return result(false, 'Request is no longer available.');
-    }
-
-    const { error: updateError } = await supabase
-      .from('friend_requests')
-      .update({ status: 'accepted', responded_at: new Date().toISOString() })
-      .eq('id', requestId)
-      .eq('to_user_id', currentUserId)
-      .eq('status', 'pending');
-
-    if (updateError) {
-      return result(false, updateError.message);
-    }
-
-    const { lowId, highId } = getUserPair(request.from_user_id, request.to_user_id);
-    const { error: upsertError } = await supabase.from('friendships').upsert(
-      {
-        user_low_id: lowId,
-        user_high_id: highId,
-      },
-      {
-        onConflict: 'user_low_id,user_high_id',
-        ignoreDuplicates: true,
-      },
-    );
-
-    if (upsertError) {
-      return result(false, upsertError.message);
-    }
-
-    await refreshData(currentUserId);
-
-    return result(true, 'Friend request accepted.');
-  }
-
-  async function declineFriendRequest(requestId: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    const { error } = await supabase
-      .from('friend_requests')
-      .update({ status: 'declined', responded_at: new Date().toISOString() })
-      .eq('id', requestId)
-      .eq('to_user_id', currentUserId)
-      .eq('status', 'pending');
-
-    if (error) {
-      return result(false, error.message);
-    }
-
-    await refreshData(currentUserId);
-
-    return result(true, 'Friend request declined.');
-  }
-
-  async function sendPoke(friendId: string, message?: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    if (!friends.some((friend) => friend.id === friendId)) {
-      return result(false, 'You can only poke linked friends.');
-    }
-
-    const cleanMessage = message?.trim() ? message.trim() : DEFAULT_POKE_MESSAGE;
-
-    const { error } = await supabase.from('pokes').insert({
-      sender_user_id: currentUserId,
-      recipient_user_id: friendId,
-      message: cleanMessage,
-      status: 'pending',
-    });
-
-    if (error) {
-      return result(false, error.message);
-    }
-
-    await refreshData(currentUserId);
-    return result(true, 'Poke sent.');
+    await AsyncStorage.setItem(STORAGE.reminderId, id);
+    await AsyncStorage.setItem(STORAGE.reminderEnabled, 'true');
+    return result(true, 'Daily reminder enabled.');
   }
 
   async function setDailyReminderEnabled(enabled: boolean): Promise<ActionResult> {
     const previous = dailyReminderEnabled;
     setDailyReminderEnabledState(enabled);
-
-    const syncResult = await syncDailyReminderSchedule(enabled);
-    if (!syncResult.ok) {
+    const r = await syncDailyReminder(
+      enabled,
+      dailyReminderHour,
+      dailyReminderMinute,
+    );
+    if (!r.ok) {
       setDailyReminderEnabledState(previous);
     }
+    return r;
+  }
 
-    return syncResult;
+  async function setDailyReminderTime(
+    hour: number,
+    minute: number,
+  ): Promise<ActionResult> {
+    const clampedHour = clampInt(hour, 0, 23);
+    const clampedMinute = clampInt(minute, 0, 59);
+    setDailyReminderHourState(clampedHour);
+    setDailyReminderMinuteState(clampedMinute);
+    await AsyncStorage.setItem(
+      STORAGE.reminderTime,
+      formatReminderTime(clampedHour, clampedMinute),
+    );
+    if (dailyReminderEnabled) {
+      const r = await syncDailyReminder(true, clampedHour, clampedMinute);
+      if (!r.ok) {
+        return r;
+      }
+      return result(true, 'Reminder time updated.');
+    }
+    return result(true, 'Reminder time saved.');
   }
 
   async function setDarkModeEnabled(enabled: boolean): Promise<ActionResult> {
     setDarkModeEnabledState(enabled);
-    await AsyncStorage.setItem(DARK_MODE_ENABLED_STORAGE_KEY, enabled ? 'true' : 'false');
+    await AsyncStorage.setItem(STORAGE.darkMode, enabled ? 'true' : 'false');
     return result(true, enabled ? 'Dark mode enabled.' : 'Dark mode disabled.');
   }
 
-  async function createTask(title: string, accountabilityFriendId?: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
+  async function createTask(
+    title: string,
+    accountabilityFriendId?: string,
+  ): Promise<ActionResult> {
     const cleanTitle = title.trim();
     if (!cleanTitle) {
       return result(false, 'Task title cannot be empty.');
@@ -988,66 +414,219 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ? friends.some((friend) => friend.id === accountabilityFriendId)
       : false;
 
-    const { error } = await supabase.from('tasks').insert({
-      owner_id: currentUserId,
+    const newTask: WeeklyTask = {
+      id: generateLocalId(),
+      ownerId: currentUser?.id ?? 'local',
       title: cleanTitle,
       completed: false,
-      week_start: weekStartDate,
-      accountability_friend_id: isValidFriend ? accountabilityFriendId : null,
-    });
+      weekStartISO,
+      accountabilityFriendId: isValidFriend ? accountabilityFriendId : undefined,
+      createdAt: new Date().toISOString(),
+    };
 
-    if (error) {
-      return result(false, error.message);
-    }
-
-    await refreshData(currentUserId);
-
+    const allTasks = await readJson<WeeklyTask[]>(STORAGE.tasks, []);
+    await writeJson(STORAGE.tasks, [newTask, ...allTasks]);
+    await refreshLocalData();
     return result(true, 'Task added for this week.');
   }
 
   async function toggleTask(taskId: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    const targetTask = currentWeekTasks.find((task) => task.id === taskId);
-    if (!targetTask) {
+    const allTasks = await readJson<WeeklyTask[]>(STORAGE.tasks, []);
+    const target = allTasks.find((task) => task.id === taskId);
+    if (!target) {
       return result(false, 'Task not found.');
     }
-
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed: !targetTask.completed })
-      .eq('id', taskId)
-      .eq('owner_id', currentUserId);
-
-    if (error) {
-      return result(false, error.message);
-    }
-
-    await refreshData(currentUserId);
-
+    const next = allTasks.map((task) =>
+      task.id === taskId ? { ...task, completed: !task.completed } : task,
+    );
+    await writeJson(STORAGE.tasks, next);
+    await refreshLocalData();
     return result(true, 'Task updated.');
   }
 
   async function deleteTask(taskId: string): Promise<ActionResult> {
-    if (!currentUserId) {
-      return result(false, 'Sign in first.');
-    }
-
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', taskId)
-      .eq('owner_id', currentUserId);
-
-    if (error) {
-      return result(false, error.message);
-    }
-
-    await refreshData(currentUserId);
-
+    const allTasks = await readJson<WeeklyTask[]>(STORAGE.tasks, []);
+    await writeJson(
+      STORAGE.tasks,
+      allTasks.filter((task) => task.id !== taskId),
+    );
+    await refreshLocalData();
     return result(true, 'Task deleted.');
+  }
+
+  async function submitWeeklyCheckIn(input: {
+    completedTaskIds: string[];
+    missedTaskIds: string[];
+    missedReason?: string;
+    nextWeekFocus?: string;
+  }): Promise<ActionResult> {
+    const completedIds = Array.from(new Set(input.completedTaskIds.filter(Boolean)));
+    const missedIds = Array.from(new Set(input.missedTaskIds.filter(Boolean)));
+
+    const allCheckIns = await readJson<WeeklyCheckIn[]>(STORAGE.checkIns, []);
+    const existing = allCheckIns.find((c) => c.weekStartISO === weekStartISO);
+    const now = new Date().toISOString();
+    const nextCheckIn: WeeklyCheckIn = {
+      id: existing?.id ?? generateLocalId(),
+      ownerId: currentUser?.id ?? 'local',
+      weekStartISO,
+      completedTaskIds: completedIds,
+      missedTaskIds: missedIds,
+      missedReason: input.missedReason?.trim() || null,
+      nextWeekFocus: input.nextWeekFocus?.trim() || null,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+    const others = allCheckIns.filter((c) => c.weekStartISO !== weekStartISO);
+    await writeJson(STORAGE.checkIns, [...others, nextCheckIn]);
+    await refreshLocalData();
+    return result(true, 'Weekly check-in saved.');
+  }
+
+  async function rotateFriendCode(): Promise<ActionResult> {
+    // The friend code now lives on the Supabase profile and rotates via
+    // server-side logic (not yet wired). Keep this as a no-op for now so
+    // existing UI doesn't break.
+    return result(false, 'Rotating the friend code is not supported yet.');
+  }
+
+  async function sendFriendRequestByCode(rawCode: string): Promise<ActionResult> {
+    const code = normalizeCode(rawCode);
+    if (code.length !== 6) {
+      return result(false, 'Friend codes must be 6 digits.');
+    }
+    if (currentUser && code === currentUser.friendCode) {
+      return result(false, 'That is your own code.');
+    }
+    const friendList = await readJson<AppUser[]>(STORAGE.friends, []);
+    if (friendList.some((friend) => friend.friendCode === code)) {
+      return result(false, 'You are already linked as friends.');
+    }
+    const newFriend: AppUser = {
+      id: `local-friend-${code}-${Date.now().toString(36)}`,
+      name: `Friend ${code}`,
+      email: `${code}@local`,
+      friendCode: code,
+    };
+    await writeJson(STORAGE.friends, [...friendList, newFriend]);
+    await refreshLocalData();
+    return result(true, `Linked with ${newFriend.name}.`);
+  }
+
+  async function acceptFriendRequest(requestId: string): Promise<ActionResult> {
+    const incoming = await readJson<FriendRequestView[]>(STORAGE.incomingRequests, []);
+    const target = incoming.find((req) => req.id === requestId);
+    if (!target) {
+      return result(false, 'Request is no longer available.');
+    }
+    const friendList = await readJson<AppUser[]>(STORAGE.friends, []);
+    const newFriend: AppUser = {
+      id: `local-friend-${requestId}`,
+      name: target.fromName,
+      email: target.fromEmail,
+      friendCode: '------',
+    };
+    await writeJson(STORAGE.friends, [...friendList, newFriend]);
+    await writeJson(
+      STORAGE.incomingRequests,
+      incoming.filter((req) => req.id !== requestId),
+    );
+    await refreshLocalData();
+    return result(true, 'Friend request accepted.');
+  }
+
+  async function declineFriendRequest(requestId: string): Promise<ActionResult> {
+    const incoming = await readJson<FriendRequestView[]>(STORAGE.incomingRequests, []);
+    await writeJson(
+      STORAGE.incomingRequests,
+      incoming.filter((req) => req.id !== requestId),
+    );
+    await refreshLocalData();
+    return result(true, 'Friend request declined.');
+  }
+
+  async function sendPoke(friendId: string, message?: string): Promise<ActionResult> {
+    if (!currentUser) {
+      return result(false, 'Profile not ready.');
+    }
+    const friend = friends.find((f) => f.id === friendId);
+    if (!friend) {
+      return result(false, 'You can only poke linked friends.');
+    }
+    const cleanMessage = message?.trim() ? message.trim() : DEFAULT_POKE_MESSAGE;
+    const newPoke: PokeView = {
+      id: generateLocalId(),
+      fromUserId: currentUser.id,
+      fromName: currentUser.name,
+      toUserId: friendId,
+      toName: friend.name,
+      message: cleanMessage,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      respondedAt: null,
+    };
+    const allPokes = await readJson<PokeView[]>(STORAGE.pokes, []);
+    await writeJson(STORAGE.pokes, [newPoke, ...allPokes]);
+    await refreshLocalData();
+    return result(true, 'Poke sent.');
+  }
+
+  async function resetLocalData(): Promise<ActionResult> {
+    // Cancel any scheduled daily reminder so it doesn't keep firing for stale data.
+    const reminderId = await AsyncStorage.getItem(STORAGE.reminderId);
+    if (reminderId) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(reminderId);
+      } catch {
+        // ignore — notification may already be gone
+      }
+    }
+
+    // Clear local prototype data + reminder bookkeeping.
+    // Dark mode preference is intentionally preserved.
+    await AsyncStorage.multiRemove([
+      STORAGE.profile,
+      STORAGE.tasks,
+      STORAGE.checkIns,
+      STORAGE.friends,
+      STORAGE.outgoingRequests,
+      STORAGE.incomingRequests,
+      STORAGE.pokes,
+      STORAGE.reminderEnabled,
+      STORAGE.reminderId,
+      STORAGE.reminderTime,
+    ]);
+
+    // Reset in-memory state. The signed-in identity (currentUser) is now
+    // sourced from AuthContext, so we don't touch it here.
+    setFriends([]);
+    setIncomingRequests([]);
+    setOutgoingRequests([]);
+    setIncomingPokes([]);
+    setOutgoingPokes([]);
+    setCurrentWeekTasks([]);
+    setCurrentWeekCheckIns([]);
+    setMyWeeklyCheckIn(null);
+    setDailyReminderEnabledState(false);
+    setDailyReminderHourState(DEFAULT_REMINDER_HOUR);
+    setDailyReminderMinuteState(DEFAULT_REMINDER_MINUTE);
+
+    return result(true, 'Local data cleared.');
+  }
+
+  async function respondToPoke(
+    pokeId: string,
+    status: Exclude<PokeStatus, 'pending'>,
+  ): Promise<ActionResult> {
+    const allPokes = await readJson<PokeView[]>(STORAGE.pokes, []);
+    const next = allPokes.map((poke) =>
+      poke.id === pokeId
+        ? { ...poke, status, respondedAt: new Date().toISOString() }
+        : poke,
+    );
+    await writeJson(STORAGE.pokes, next);
+    await refreshLocalData();
+    return result(true, status === 'on_it' ? 'Marked as on it.' : 'Marked as later.');
   }
 
   const value: AppContextValue = {
@@ -1061,13 +640,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     incomingPokes,
     outgoingPokes,
     currentWeekTasks,
+    currentWeekCheckIns,
+    myWeeklyCheckIn,
     dailyReminderEnabled,
+    dailyReminderHour,
+    dailyReminderMinute,
     darkModeEnabled,
     defaultPokeMessage: DEFAULT_POKE_MESSAGE,
-    signUp,
-    signIn,
-    signOut,
-    deleteAccount,
     rotateFriendCode,
     sendFriendRequestByCode,
     acceptFriendRequest,
@@ -1075,10 +654,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     sendPoke,
     respondToPoke,
     setDailyReminderEnabled,
+    setDailyReminderTime,
     setDarkModeEnabled,
     createTask,
     toggleTask,
     deleteTask,
+    submitWeeklyCheckIn,
+    resetLocalData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

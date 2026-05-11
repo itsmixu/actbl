@@ -1,15 +1,163 @@
+---
+name: actbl Design System
+colors:
+  surface: '#fff8f6'
+  surface-dim: '#e9d6d1'
+  surface-bright: '#fff8f6'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#fff1ed'
+  surface-container: '#fdeae4'
+  surface-container-high: '#f7e4df'
+  surface-container-highest: '#f1dfd9'
+  on-surface: '#231916'
+  on-surface-variant: '#56423c'
+  inverse-surface: '#392e2b'
+  inverse-on-surface: '#ffede8'
+  outline: '#89726b'
+  outline-variant: '#dcc1b8'
+  surface-tint: '#9d4324'
+  primary: '#9a4021'
+  on-primary: '#ffffff'
+  primary-container: '#b95837'
+  on-primary-container: '#fffbff'
+  inverse-primary: '#ffb59d'
+  secondary: '#5f5f57'
+  on-secondary: '#ffffff'
+  secondary-container: '#e5e3d9'
+  on-secondary-container: '#65655d'
+  tertiary: '#006768'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#008283'
+  on-tertiary-container: '#f3fffe'
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
+  primary-fixed: '#ffdbd0'
+  primary-fixed-dim: '#ffb59d'
+  on-primary-fixed: '#390b00'
+  on-primary-fixed-variant: '#7e2c0e'
+  secondary-fixed: '#e5e3d9'
+  secondary-fixed-dim: '#c8c7bd'
+  on-secondary-fixed: '#1b1c16'
+  on-secondary-fixed-variant: '#474740'
+  tertiary-fixed: '#89f4f4'
+  tertiary-fixed-dim: '#6cd7d8'
+  on-tertiary-fixed: '#002020'
+  on-tertiary-fixed-variant: '#004f50'
+  background: '#fff8f6'
+  on-background: '#231916'
+  surface-variant: '#f1dfd9'
+  parchment-bg: '#f5f4ed'
+  ivory-surface: '#faf9f5'
+  near-black-text: '#141413'
+  olive-gray: '#5e5d59'
+  terracotta-brand: '#c96442'
+  coral-accent: '#d97757'
+  error-crimson: '#b53333'
+  focus-blue: '#3898ec'
+  warm-sand: '#e8e6dc'
+  charcoal-warm: '#4d4c48'
+  stone-gray: '#87867f'
+  border-cream: '#f0eee6'
+  bg-dark: '#141413'
+  surface-dark: '#1c1b19'
+  text-dark-primary: '#ede9df'
+  brand-dark: '#d4693e'
+typography:
+  display-hero:
+    fontFamily: Newsreader
+    fontSize: 64px
+    fontWeight: '500'
+    lineHeight: '1.10'
+  section-heading:
+    fontFamily: Newsreader
+    fontSize: 52px
+    fontWeight: '500'
+    lineHeight: '1.20'
+  sub-heading-lg:
+    fontFamily: Newsreader
+    fontSize: 36px
+    fontWeight: '500'
+    lineHeight: '1.30'
+  sub-heading:
+    fontFamily: Newsreader
+    fontSize: 32px
+    fontWeight: '500'
+    lineHeight: '1.10'
+  feature-title:
+    fontFamily: Newsreader
+    fontSize: 20.8px
+    fontWeight: '500'
+    lineHeight: '1.20'
+  body-large:
+    fontFamily: Inter
+    fontSize: 20px
+    fontWeight: '400'
+    lineHeight: '1.60'
+  body-standard:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: '1.60'
+  body-ui-bold:
+    fontFamily: Inter
+    fontSize: 16px
+    fontWeight: '500'
+    lineHeight: '1.25'
+  caption:
+    fontFamily: Inter
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: '1.43'
+  label:
+    fontFamily: Inter
+    fontSize: 12px
+    fontWeight: '500'
+    lineHeight: '1.30'
+    letterSpacing: 0.12px
+  overline:
+    fontFamily: Inter
+    fontSize: 10px
+    fontWeight: '400'
+    lineHeight: '1.60'
+    letterSpacing: 0.5px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  base: 8px
+  '3': 3px
+  '4': 4px
+  '6': 6px
+  '8': 8px
+  '10': 10px
+  '12': 12px
+  '16': 16px
+  '20': 20px
+  '24': 24px
+  '30': 30px
+  section-gap-lg: 120px
+  section-gap-md: 80px
+  card-padding: 24px
+---
+
 # actbl Design System
 
 ## 1. Visual Theme & Atmosphere
 
-actbl is a focused accountability tool — warm enough to feel like a supportive coach, serious enough to mean it. The entire experience is built on a parchment-toned canvas (`#f2efe8`) that feels grounded and deliberate rather than digital and sterile. This isn't a clinical productivity tracker, and it isn't a casual journal — it occupies the space between the two: a place where you commit to things and actually follow through.
+actbl is a focused accountability tool — warm enough to feel like a supportive coach, serious enough to mean it. The entire experience is built on a parchment-toned canvas (`#f5f4ed`) that feels grounded and deliberate rather than digital and sterile. This isn't a clinical productivity tracker, and it isn't a casual journal — it occupies the space between the two: a place where you commit to things and actually follow through.
 
 The typographic approach uses a medium-weight serif for headings that commands attention without shouting, paired with a clean sans-serif for all functional UI. Every line of copy should feel like it was written with intention — no filler, no hand-holding. The tone is direct, warm, and honest. Think: the friend who checks in on you and actually means it.
 
-The color palette is warm throughout — terracotta (`#c96442`) as the primary action color, parchment as the canvas, and exclusively yellow-brown-tinted neutrals. The canvas is a noticeably warmer cream than the near-white ivory used for cards and surfaces, so element edges read clearly without needing heavy borders or shadows. There are no cool blue-grays anywhere. This warmth keeps the app from feeling punishing or clinical even when the content is about missed tasks or difficult weeks. Accountability should feel human, not corporate.
+The color palette is warm throughout — terracotta (`#c96442`) as the primary action color, parchment as the canvas, and exclusively yellow-brown-tinted neutrals. There are no cool blue-grays anywhere. This warmth keeps the app from feeling punishing or clinical even when the content is about missed tasks or difficult weeks. Accountability should feel human, not corporate.
 
 **Key Characteristics:**
-- Warm parchment canvas (`#f2efe8`) — grounded and focused, not sterile, distinct from element surfaces
+- Warm parchment canvas (`#f5f4ed`) — grounded and focused, not sterile
 - Serif for headings, sans for all UI — authority without decoration
 - Terracotta brand accent (`#c96442`) — action-forward, warm, high-signal
 - Exclusively warm-toned neutrals — every gray has a yellow-brown undertone
@@ -29,25 +177,25 @@ The color palette is warm throughout — terracotta (`#c96442`) as the primary a
 - **Focus Blue** (`#3898ec`): Input focus rings only — the single cool color in the system, used purely for accessibility compliance.
 
 ### Surface & Background
-- **Parchment** (`#f2efe8`): The primary background — a warm cream that feels grounded and analog. Deliberately deeper than card surfaces so containers read with clear separation.
-- **Ivory** (`#faf9f5`): The card surface — a near-white that lifts noticeably off Parchment, creating clean separation without harsh borders or shadows.
+- **Parchment** (`#f5f4ed`): The primary background — a warm cream that feels grounded and analog. Not a productivity dashboard, not a blank page. A working surface.
+- **Ivory** (`#faf9f5`): The card surface — slightly lighter than Parchment, creating a clean lift for content containers without introducing visual noise.
 - **Pure White** (`#ffffff`): Reserved for maximum-contrast interactive elements only.
-- **Warm Sand** (`#e8e5dc`): Secondary button backgrounds and interactive surfaces — noticeably warm, clearly tappable, deeper than borders.
-- **Dark Surface** (`#3a3632`): Dark-theme containers and elevated dark elements — warm charcoal that never reads as cold.
-- **Deep Dark** (`#2d2a26`): Dark-theme page background and primary dark surface.
+- **Warm Sand** (`#e8e6dc`): Secondary button backgrounds and interactive surfaces — noticeably warm, clearly tappable.
+- **Dark Surface** (`#30302e`): Dark-theme containers and elevated dark elements — warm charcoal that never reads as cold.
+- **Deep Dark** (`#141413`): Dark-theme page background and primary dark surface.
 
 ### Neutrals & Text
 - **Charcoal Warm** (`#4d4c48`): Button text on light warm surfaces — the go-to dark-on-light text.
 - **Olive Gray** (`#5e5d59`): Secondary body text — a distinctly warm medium-dark gray.
 - **Stone Gray** (`#87867f`): Tertiary text, footnotes, and de-emphasized metadata.
 - **Dark Warm** (`#3d3d3a`): Dark text links and emphasized secondary text.
-- **Warm Silver** (`#c4c0b5`): Text on dark surfaces — a warm, parchment-tinted light gray.
+- **Warm Silver** (`#b0aea5`): Text on dark surfaces — a warm, parchment-tinted light gray.
 
 ### Semantic & Accent
-- **Border Cream** (`#e6e3da`): Standard light-theme border — a visible warm cream that defines edges against Parchment.
-- **Border Warm** (`#dbd8cf`): Prominent borders, section dividers, and emphasized containment on light surfaces.
-- **Border Dark** (`#4a4640`): Standard border on dark surfaces — maintains the warm tone.
-- **Ring Warm** (`#cfccc3`): Shadow ring color for button hover/focus states.
+- **Border Cream** (`#f0eee6`): Standard light-theme border — barely visible warm cream, creating the gentlest possible containment.
+- **Border Warm** (`#e8e6dc`): Prominent borders, section dividers, and emphasized containment on light surfaces.
+- **Border Dark** (`#30302e`): Standard border on dark surfaces — maintains the warm tone.
+- **Ring Warm** (`#d1cfc5`): Shadow ring color for button hover/focus states.
 - **Ring Subtle** (`#dedc01`): Secondary ring variant for lighter interactive surfaces.
 - **Ring Deep** (`#c2c0b6`): Deeper ring for active/pressed states.
 
@@ -58,26 +206,26 @@ The color palette is warm throughout — terracotta (`#c96442`) as the primary a
 
 ## 2b. Dark Mode Palette
 
-Dark mode keeps the same warm, grounded identity — it doesn't flip to cold blue-black like most apps. Every dark surface has an olive-charcoal undertone. The background is lighter than typical dark modes for better readability and less eye strain. Terracotta remains the primary action color and is the one thing that stays bright in an otherwise muted environment.
+Dark mode keeps the same warm, grounded identity — it doesn't flip to cold blue-black like most apps. Every dark surface has an olive-charcoal undertone. The background feels like a dimly lit workspace, not a void. Terracotta remains the primary action color and is the one thing that stays bright in an otherwise muted environment.
 
 ### Dark Mode Backgrounds & Surfaces
 
 | Role | Token | Hex | Notes |
 |------|-------|-----|-------|
-| Page Background | `bg-dark` | `#2d2a26` | Warm charcoal — noticeably lighter than pure black for readability |
-| Card Surface | `surface-dark` | `#3a3632` | Clearly above background — distinct layered surface |
-| Elevated Card | `surface-dark-raised` | `#45413d` | Modals, popovers, overlays — clearly lifted from base |
-| Section Bar / Nav | `surface-dark-bar` | `#34302c` | Tab bars, section headers, sticky elements |
-| Input Background | `input-dark` | `#3d3935` | Form fields — distinct from card surface without being jarring |
-| Pressed / Active State | `surface-dark-active` | `#504c47` | Touch feedback on interactive surfaces |
+| Page Background | `bg-dark` | `#141413` | Near Black — deep warm charcoal, the base of everything |
+| Card Surface | `surface-dark` | `#1c1b19` | Slightly above background — primary content container |
+| Elevated Card | `surface-dark-raised` | `#242220` | Modals, popovers, overlays — clearly lifted from base |
+| Section Bar / Nav | `surface-dark-bar` | `#1e1d1b` | Tab bars, section headers, sticky elements |
+| Input Background | `input-dark` | `#222120` | Form fields — distinct from card surface without being jarring |
+| Pressed / Active State | `surface-dark-active` | `#2a2826` | Touch feedback on interactive surfaces |
 
 ### Dark Mode Text
 
 | Role | Token | Hex | Notes |
 |------|-------|-----|-------|
-| Primary Text | `text-dark-primary` | `#f5f2eb` | Bright warm off-white — excellent contrast for reading |
-| Secondary Text | `text-dark-secondary` | `#c4c0b5` | Light warm-gray for labels, subtitles, metadata |
-| Tertiary / Muted Text | `text-dark-tertiary` | `#958f85` | Visible muted text for timestamps, disabled states |
+| Primary Text | `text-dark-primary` | `#ede9df` | Warm off-white with a cream tint — never pure white |
+| Secondary Text | `text-dark-secondary` | `#a8a59c` | The warm-gray workhorse for labels, subtitles, metadata |
+| Tertiary / Muted Text | `text-dark-tertiary` | `#6e6b63` | Timestamps, disabled states, de-emphasized info |
 | Inverse Text (on Terracotta) | `text-on-brand` | `#faf9f5` | Ivory — used for text on Terracotta buttons |
 
 ### Dark Mode Brand & Actions
@@ -93,8 +241,8 @@ Dark mode keeps the same warm, grounded identity — it doesn't flip to cold blu
 
 | Role | Token | Hex | Notes |
 |------|-------|-----|-------|
-| Standard Border | `border-dark` | `#4a4640` | Visible warm separator between cards and sections |
-| Prominent Border | `border-dark-strong` | `#58544e` | Section dividers, emphasized containers |
+| Standard Border | `border-dark` | `#2a2826` | Subtle warm separator between cards and sections |
+| Prominent Border | `border-dark-strong` | `#333028` | Section dividers, emphasized containers |
 | Ring (hover/focus) | `ring-dark` | `#3d3a35` | Ring shadow color for interactive element states |
 | Ring (active/pressed) | `ring-dark-deep` | `#4a4640` | Deeper ring for pressed/active feedback |
 
@@ -104,21 +252,21 @@ Each light-mode role maps directly to a dark-mode equivalent:
 
 | Light Role | Light Hex | → | Dark Role | Dark Hex |
 |------------|-----------|---|-----------|----------|
-| Parchment (bg) | `#f2efe8` | → | Warm Charcoal (bg) | `#2d2a26` |
-| Ivory (card) | `#faf9f5` | → | Dark Card | `#3a3632` |
-| Warm Sand (interactive) | `#e8e5dc` | → | Dark Active | `#504c47` |
-| Near Black (text) | `#141413` | → | Bright Off-White (text) | `#f5f2eb` |
-| Olive Gray (secondary) | `#5e5d59` | → | Light Warm Gray | `#c4c0b5` |
-| Stone Gray (tertiary) | `#87867f` | → | Visible Muted Gray | `#958f85` |
+| Parchment (bg) | `#f5f4ed` | → | Near Black (bg) | `#141413` |
+| Ivory (card) | `#faf9f5` | → | Dark Card | `#1c1b19` |
+| Warm Sand (interactive) | `#e8e6dc` | → | Dark Active | `#2a2826` |
+| Near Black (text) | `#141413` | → | Warm Off-White (text) | `#ede9df` |
+| Olive Gray (secondary) | `#5e5d59` | → | Warm Mid-Gray | `#a8a59c` |
+| Stone Gray (tertiary) | `#87867f` | → | Muted Warm Gray | `#6e6b63` |
 | Terracotta Brand | `#c96442` | → | Terracotta (brightened) | `#d4693e` |
-| Border Cream | `#e6e3da` | → | Dark Border | `#4a4640` |
-| Border Warm | `#dbd8cf` | → | Dark Border Strong | `#58544e` |
-| Ring Warm | `#cfccc3` | → | Dark Ring | `#5c5852` |
+| Border Cream | `#f0eee6` | → | Dark Border | `#2a2826` |
+| Border Warm | `#e8e6dc` | → | Dark Border Strong | `#333028` |
+| Ring Warm | `#d1cfc5` | → | Dark Ring | `#3d3a35` |
 
 ### Dark Mode Rules
 
-- **Keep it warm**: Never introduce cool blue-gray or pure black (`#000000`). Dark backgrounds (`#2d2a26`, `#3a3632`) retain olive undertones while staying lighter than typical dark modes.
-- **Readable text on dark**: Primary text is `#f5f2eb` — bright enough for comfortable reading without harsh contrast.
+- **Keep it warm**: Never introduce cool blue-gray or pure black (`#000000`). The warmest dark backgrounds (`#141413`, `#1c1b19`) must retain their olive undertone.
+- **No pure white text**: Primary text is `#ede9df` — the cream tint keeps it from reading as harsh on warm dark surfaces.
 - **Terracotta stays bold**: It's the one color that lifts visually in dark mode. Don't dilute it — it's the user's primary action signal.
 - **Elevation through lightness**: Surfaces get progressively lighter as they rise — bg → card → elevated card. This replaces the drop shadow approach with surface tone itself.
 - **System status colors (error, focus) stay close to light-mode values** — users have learned to associate blue focus rings and red errors; don't subvert those expectations.
@@ -167,11 +315,11 @@ Each light-mode role maps directly to a dark-mode equivalent:
 ### Buttons
 
 **Warm Sand (Secondary)**
-- Background: Warm Sand (`#e8e5dc`)
+- Background: Warm Sand (`#e8e6dc`)
 - Text: Charcoal Warm (`#4d4c48`)
 - Padding: 0px 12px 0px 8px (asymmetric — icon-first layout)
 - Radius: comfortably rounded (8px)
-- Shadow: ring-based (`#e8e5dc 0px 0px 0px 0px, #cfccc3 0px 0px 0px 1px`)
+- Shadow: ring-based (`#e8e6dc 0px 0px 0px 0px, #d1cfc5 0px 0px 0px 1px`)
 - The workhorse button — warm, unassuming, clearly interactive
 
 **White Surface**
@@ -183,11 +331,11 @@ Each light-mode role maps directly to a dark-mode equivalent:
 - Clean, elevated button for light surfaces
 
 **Dark Charcoal**
-- Background: Dark Surface (`#3a3632`)
+- Background: Dark Surface (`#30302e`)
 - Text: Ivory (`#faf9f5`)
 - Padding: 0px 12px 0px 8px
 - Radius: comfortably rounded (8px)
-- Shadow: ring-based (`#3a3632 0px 0px 0px 0px, #4a4640 0px 0px 0px 1px`)
+- Shadow: ring-based (`#30302e 0px 0px 0px 0px, ring 0px 0px 0px 1px`)
 - The inverted variant for dark-on-light emphasis
 
 **Brand Terracotta**
@@ -198,16 +346,16 @@ Each light-mode role maps directly to a dark-mode equivalent:
 - The primary CTA — the only button with chromatic color
 
 **Dark Primary**
-- Background: Deep Dark (`#2d2a26`)
-- Text: Warm Silver (`#c4c0b5`)
+- Background: Anthropic Near Black (`#141413`)
+- Text: Warm Silver (`#b0aea5`)
 - Padding: 9.6px 16.8px
 - Radius: generously rounded (12px)
-- Border: thin solid Dark Surface (`1px solid #4a4640`)
+- Border: thin solid Dark Surface (`1px solid #30302e`)
 - Used on dark theme surfaces
 
 ### Cards & Containers
-- Background: Ivory (`#faf9f5`) or Pure White (`#ffffff`) on light surfaces; Dark Surface (`#3a3632`) on dark
-- Border: thin solid Border Cream (`1px solid #e6e3da`) on light; `1px solid #4a4640` on dark
+- Background: Ivory (`#faf9f5`) or Pure White (`#ffffff`) on light surfaces; Dark Surface (`#30302e`) on dark
+- Border: thin solid Border Cream (`1px solid #f0eee6`) on light; `1px solid #30302e` on dark
 - Radius: comfortably rounded (8px) for standard cards; generously rounded (16px) for featured; very rounded (32px) for hero containers and embedded media
 - Shadow: whisper-soft (`rgba(0,0,0,0.05) 0px 4px 24px`) for elevated content
 - Ring shadow: `0px 0px 0px 1px` patterns for interactive card states
@@ -224,7 +372,7 @@ Each light-mode role maps directly to a dark-mode equivalent:
 - Sticky top nav with warm background
 - Logo: Claude wordmark in Anthropic Near Black
 - Links: mix of Near Black (`#141413`), Olive Gray (`#5e5d59`), and Dark Warm (`#3d3d3a`)
-- Nav border: `1px solid #4a4640` (dark) or `1px solid #f0eee6` (light)
+- Nav border: `1px solid #30302e` (dark) or `1px solid #f0eee6` (light)
 - CTA: Terracotta Brand button or White Surface button
 - Hover: text shifts to foreground-primary, no decoration
 
@@ -287,21 +435,21 @@ Each light-mode role maps directly to a dark-mode equivalent:
 | Level | Treatment | Use |
 |-------|-----------|-----|
 | Flat (Level 0) | No shadow, no border | Parchment background, inline text |
-| Contained (Level 1) | `1px solid #e6e3da` (light) or `1px solid #4a4640` (dark) | Standard cards, sections |
-| Ring (Level 2) | `0px 0px 0px 1px` ring shadows using warm grays (`#cfccc3` light, `#5c5852` dark) | Interactive cards, buttons, hover states |
+| Contained (Level 1) | `1px solid #f0eee6` (light) or `1px solid #30302e` (dark) | Standard cards, sections |
+| Ring (Level 2) | `0px 0px 0px 1px` ring shadows using warm grays | Interactive cards, buttons, hover states |
 | Whisper (Level 3) | `rgba(0,0,0,0.05) 0px 4px 24px` | Elevated feature cards, product screenshots |
 | Inset (Level 4) | `inset 0px 0px 0px 1px` at 15% opacity | Active/pressed button states |
 
 **Shadow Philosophy**: Depth is communicated through **warm-toned ring shadows** rather than traditional drop shadows. The `0px 0px 0px 1px` pattern creates a contained, border-like halo that is softer than an actual border — precise without being harsh. When drop shadows do appear, they are extremely soft (0.05 opacity, 24px blur) — a barely perceptible lift that suggests the element is active, not floating.
 
 ### Depth in Practice
-- **Light/Dark alternation**: The sharpest depth shift comes from toggling between Parchment (`#f2efe8`) and Deep Dark (`#2d2a26`) surfaces — used deliberately to separate primary content zones (tasks, check-ins, accountability).
+- **Light/Dark alternation**: The sharpest depth shift comes from toggling between Parchment (`#f5f4ed`) and Near Black (`#141413`) surfaces — used deliberately to separate primary content zones (tasks, check-ins, accountability).
 - **Warm ring halos**: Interactive elements use ring shadows that stay in the warm palette — never cool-toned or generic gray.
 
 ## 7. Do's and Don'ts
 
 ### Do
-- Use Parchment (`#f2efe8`) as the primary light background — warm, grounded, deliberate
+- Use Parchment (`#f5f4ed`) as the primary light background — warm, grounded, deliberate
 - Use Serif at weight 500 for all headings — consistent authority across every heading level
 - Reserve Terracotta Brand (`#c96442`) for primary actions and the highest-signal UI moments
 - Keep all neutrals warm-toned — yellow-brown undertones on every gray
@@ -318,7 +466,7 @@ Each light-mode role maps directly to a dark-mode equivalent:
 - Don't introduce saturated colors beyond Terracotta — the palette is deliberately restrained
 - Don't use sharp corners (< 6px radius) on interactive elements — softness is intentional
 - Don't apply heavy drop shadows — depth comes from ring shadows and surface tone shifts
-- Don't use pure white (`#ffffff`) as a page background — Parchment is the canvas, Ivory is for elements that need to lift off it
+- Don't use pure white (`#ffffff`) as a page background — Parchment or Ivory are always correct
 - Don't add decorative elements that don't serve the task — this is a productivity tool, not a portfolio
 - Don't reduce body line-height below 1.40 — legibility under real conditions matters
 - Don't use monospace fonts outside of code contexts
@@ -359,20 +507,20 @@ Each light-mode role maps directly to a dark-mode equivalent:
 
 ### Quick Color Reference
 - Primary Action: "Terracotta Brand (#c96442)"
-- Page Background: "Parchment (#f2efe8)"
+- Page Background: "Parchment (#f5f4ed)"
 - Card Surface: "Ivory (#faf9f5)"
 - Primary Text: "Near Black (#141413)"
 - Secondary Text: "Olive Gray (#5e5d59)"
 - Tertiary / Meta Text: "Stone Gray (#87867f)"
-- Borders (light): "Border Cream (#e6e3da)"
-- Dark Surface: "Dark Surface (#3a3632)"
+- Borders (light): "Border Cream (#f0eee6)"
+- Dark Surface: "Dark Surface (#30302e)"
 
 ### Example Component Prompts
-- "Create a weekly task card on Ivory (#faf9f5) with a 1px solid Border Cream (#e6e3da) border and 8px rounded corners. Task title in Serif at 20px weight 500, Near Black (#141413). Status label in Olive Gray (#5e5d59) at 14px Sans. Completion toggle as a Terracotta (#c96442) filled circle when done. Add a whisper shadow (rgba(0,0,0,0.05) 0px 4px 24px)."
-- "Design a weekly check-in summary section on Parchment (#f2efe8). Section heading in Serif at 32px weight 500, line-height 1.10. Body text in Olive Gray (#5e5d59) at 16px Sans, 1.60 line-height. Use a Terracotta (#c96442) CTA button with Ivory text and 12px radius."
-- "Build a dark accountability card on Dark Surface (#3a3632) with Ivory (#faf9f5) heading text in Serif at 25px weight 500. Friend name and task info in Warm Silver (#c4c0b5) at 15px Sans. Border in Dark Border (#4a4640). Ring shadow on hover."
+- "Create a weekly task card on Ivory (#faf9f5) with a 1px solid Border Cream (#f0eee6) border and 8px rounded corners. Task title in Serif at 20px weight 500, Near Black (#141413). Status label in Olive Gray (#5e5d59) at 14px Sans. Completion toggle as a Terracotta (#c96442) filled circle when done. Add a whisper shadow (rgba(0,0,0,0.05) 0px 4px 24px)."
+- "Design a weekly check-in summary section on Parchment (#f5f4ed). Section heading in Serif at 32px weight 500, line-height 1.10. Body text in Olive Gray (#5e5d59) at 16px Sans, 1.60 line-height. Use a Terracotta (#c96442) CTA button with Ivory text and 12px radius."
+- "Build a dark accountability card on Near Black (#141413) with Ivory (#faf9f5) heading text in Serif at 25px weight 500. Friend name and task info in Warm Silver (#b0aea5) at 15px Sans. Border in Dark Surface (#30302e). Ring shadow on hover."
 - "Create a primary action button in Terracotta (#c96442) with Ivory (#faf9f5) text, 12px radius, and a ring shadow (0px 0px 0px 1px #c96442). Padding: 9.6px 16.8px. Sans, weight 500."
-- "Design a poke/nudge notification row on Ivory (#faf9f5). Friend name in Near Black (#141413) at 15px Sans weight 500. Message in Olive Gray (#5e5d59) at 14px. Action buttons: Terracotta for respond, Warm Sand (#e8e5dc) for dismiss. 8px radius throughout."
+- "Design a poke/nudge notification row on Ivory (#faf9f5). Friend name in Near Black (#141413) at 15px Sans weight 500. Message in Olive Gray (#5e5d59) at 14px. Action buttons: Terracotta for respond, Warm Sand (#e8e6dc) for dismiss. 8px radius throughout."
 
 ### Iteration Guide
 1. Focus on ONE component at a time — complete it before moving to the next
@@ -380,5 +528,5 @@ Each light-mode role maps directly to a dark-mode equivalent:
 3. Always specify warm-toned variants — no cool grays anywhere
 4. Describe serif vs sans usage explicitly — "Serif for the heading, Sans for the label"
 5. For shadows, use "ring shadow (0px 0px 0px 1px)" or "whisper shadow" — never a generic drop shadow
-6. Specify the surface — "on Parchment (#f2efe8)" or "on Near Black (#141413)"
+6. Specify the surface — "on Parchment (#f5f4ed)" or "on Near Black (#141413)"
 7. Copy should be direct and action-oriented — match the tone of a focused, supportive coach
