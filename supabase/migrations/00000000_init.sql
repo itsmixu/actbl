@@ -29,28 +29,7 @@ create index if not exists profiles_friend_code_idx on public.profiles (friend_c
 
 alter table public.profiles enable row level security;
 
-drop policy if exists profiles_select_self_or_friend on public.profiles;
-create policy profiles_select_self_or_friend
-on public.profiles
-for select
-to authenticated
-using (
-  id = auth.uid()
-  or exists (
-    select 1
-    from public.friendships f
-    where (f.user_low_id = auth.uid() and f.user_high_id = profiles.id)
-       or (f.user_high_id = auth.uid() and f.user_low_id = profiles.id)
-  )
-);
-
-drop policy if exists profiles_update_self on public.profiles;
-create policy profiles_update_self
-on public.profiles
-for update
-to authenticated
-using (id = auth.uid())
-with check (id = auth.uid());
+-- RLS policies moved to end of file (after all tables created)
 
 -- Server-side generation of a unique 6-digit friend code.
 create or replace function public.generate_friend_code()
@@ -134,35 +113,6 @@ create index if not exists friend_requests_to_status_idx
 
 alter table public.friend_requests enable row level security;
 
-drop policy if exists friend_requests_select_participant on public.friend_requests;
-create policy friend_requests_select_participant
-on public.friend_requests
-for select
-to authenticated
-using (from_user_id = auth.uid() or to_user_id = auth.uid());
-
-drop policy if exists friend_requests_insert_sender on public.friend_requests;
-create policy friend_requests_insert_sender
-on public.friend_requests
-for insert
-to authenticated
-with check (
-  from_user_id = auth.uid()
-  and from_user_id <> to_user_id
-  and status = 'pending'
-);
-
-drop policy if exists friend_requests_update_recipient on public.friend_requests;
-create policy friend_requests_update_recipient
-on public.friend_requests
-for update
-to authenticated
-using (to_user_id = auth.uid())
-with check (
-  to_user_id = auth.uid()
-  and status in ('accepted', 'declined')
-);
-
 -- ============================================================================
 -- friendships
 -- ============================================================================
@@ -180,16 +130,6 @@ create index if not exists friendships_user_low_idx on public.friendships (user_
 create index if not exists friendships_user_high_idx on public.friendships (user_high_id);
 
 alter table public.friendships enable row level security;
-
-drop policy if exists friendships_select_participant on public.friendships;
-create policy friendships_select_participant
-on public.friendships
-for select
-to authenticated
-using (user_low_id = auth.uid() or user_high_id = auth.uid());
-
--- Friendships are only created via the accept_friend_request RPC, which runs
--- as security definer. No direct insert policy needed.
 
 -- ============================================================================
 -- RPCs: send / accept friend request
@@ -330,43 +270,6 @@ create index if not exists tasks_owner_week_idx on public.tasks (owner_id, week_
 
 alter table public.tasks enable row level security;
 
-drop policy if exists tasks_select_self_or_friend on public.tasks;
-create policy tasks_select_self_or_friend
-on public.tasks
-for select
-to authenticated
-using (
-  owner_id = auth.uid()
-  or exists (
-    select 1
-    from public.friendships f
-    where (f.user_low_id = auth.uid() and f.user_high_id = tasks.owner_id)
-       or (f.user_high_id = auth.uid() and f.user_low_id = tasks.owner_id)
-  )
-);
-
-drop policy if exists tasks_insert_owner on public.tasks;
-create policy tasks_insert_owner
-on public.tasks
-for insert
-to authenticated
-with check (owner_id = auth.uid());
-
-drop policy if exists tasks_update_owner on public.tasks;
-create policy tasks_update_owner
-on public.tasks
-for update
-to authenticated
-using (owner_id = auth.uid())
-with check (owner_id = auth.uid());
-
-drop policy if exists tasks_delete_owner on public.tasks;
-create policy tasks_delete_owner
-on public.tasks
-for delete
-to authenticated
-using (owner_id = auth.uid());
-
 create or replace function public.set_tasks_updated_at()
 returns trigger
 language plpgsql
@@ -403,36 +306,6 @@ create index if not exists weekly_check_ins_owner_week_idx
   on public.weekly_check_ins (owner_id, week_start desc);
 
 alter table public.weekly_check_ins enable row level security;
-
-drop policy if exists weekly_check_ins_select_participant on public.weekly_check_ins;
-create policy weekly_check_ins_select_participant
-on public.weekly_check_ins
-for select
-to authenticated
-using (
-  owner_id = auth.uid()
-  or exists (
-    select 1
-    from public.friendships f
-    where (f.user_low_id = auth.uid() and f.user_high_id = weekly_check_ins.owner_id)
-       or (f.user_high_id = auth.uid() and f.user_low_id = weekly_check_ins.owner_id)
-  )
-);
-
-drop policy if exists weekly_check_ins_insert_owner on public.weekly_check_ins;
-create policy weekly_check_ins_insert_owner
-on public.weekly_check_ins
-for insert
-to authenticated
-with check (owner_id = auth.uid());
-
-drop policy if exists weekly_check_ins_update_owner on public.weekly_check_ins;
-create policy weekly_check_ins_update_owner
-on public.weekly_check_ins
-for update
-to authenticated
-using (owner_id = auth.uid())
-with check (owner_id = auth.uid());
 
 create or replace function public.set_weekly_check_ins_updated_at()
 returns trigger
@@ -475,37 +348,6 @@ create index if not exists pokes_recipient_status_idx
   on public.pokes (recipient_user_id, status);
 
 alter table public.pokes enable row level security;
-
-drop policy if exists pokes_select_participant on public.pokes;
-create policy pokes_select_participant
-on public.pokes
-for select
-to authenticated
-using (
-  sender_user_id = auth.uid() or recipient_user_id = auth.uid()
-);
-
-drop policy if exists pokes_insert_sender on public.pokes;
-create policy pokes_insert_sender
-on public.pokes
-for insert
-to authenticated
-with check (
-  sender_user_id = auth.uid()
-  and recipient_user_id <> auth.uid()
-  and status = 'pending'
-);
-
-drop policy if exists pokes_update_recipient_response on public.pokes;
-create policy pokes_update_recipient_response
-on public.pokes
-for update
-to authenticated
-using (recipient_user_id = auth.uid())
-with check (
-  recipient_user_id = auth.uid()
-  and status in ('on_it', 'later')
-);
 
 create or replace function public.set_poke_responded_at()
 returns trigger
@@ -562,3 +404,173 @@ $$;
 
 revoke all on function public.delete_my_account() from public;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- ============================================================================
+-- RLS Policies (all tables created above)
+-- ============================================================================
+
+-- ---- profiles ----
+drop policy if exists profiles_select_self_or_friend on public.profiles;
+create policy profiles_select_self_or_friend
+on public.profiles
+for select
+to authenticated
+using (
+  id = auth.uid()
+  or exists (
+    select 1
+    from public.friendships f
+    where (f.user_low_id = auth.uid() and f.user_high_id = profiles.id)
+       or (f.user_high_id = auth.uid() and f.user_low_id = profiles.id)
+  )
+);
+
+drop policy if exists profiles_update_self on public.profiles;
+create policy profiles_update_self
+on public.profiles
+for update
+to authenticated
+using (id = auth.uid())
+with check (id = auth.uid());
+
+-- ---- friend_requests ----
+drop policy if exists friend_requests_select_participant on public.friend_requests;
+create policy friend_requests_select_participant
+on public.friend_requests
+for select
+to authenticated
+using (from_user_id = auth.uid() or to_user_id = auth.uid());
+
+drop policy if exists friend_requests_insert_sender on public.friend_requests;
+create policy friend_requests_insert_sender
+on public.friend_requests
+for insert
+to authenticated
+with check (
+  from_user_id = auth.uid()
+  and from_user_id <> to_user_id
+  and status = 'pending'
+);
+
+drop policy if exists friend_requests_update_recipient on public.friend_requests;
+create policy friend_requests_update_recipient
+on public.friend_requests
+for update
+to authenticated
+using (to_user_id = auth.uid())
+with check (
+  to_user_id = auth.uid()
+  and status in ('accepted', 'declined')
+);
+
+-- ---- friendships ----
+drop policy if exists friendships_select_participant on public.friendships;
+create policy friendships_select_participant
+on public.friendships
+for select
+to authenticated
+using (user_low_id = auth.uid() or user_high_id = auth.uid());
+
+-- Friendships are only created via the accept_friend_request RPC, which runs
+-- as security definer. No direct insert policy needed.
+
+-- ---- tasks ----
+drop policy if exists tasks_select_self_or_friend on public.tasks;
+create policy tasks_select_self_or_friend
+on public.tasks
+for select
+to authenticated
+using (
+  owner_id = auth.uid()
+  or exists (
+    select 1
+    from public.friendships f
+    where (f.user_low_id = auth.uid() and f.user_high_id = tasks.owner_id)
+       or (f.user_high_id = auth.uid() and f.user_low_id = tasks.owner_id)
+  )
+);
+
+drop policy if exists tasks_insert_owner on public.tasks;
+create policy tasks_insert_owner
+on public.tasks
+for insert
+to authenticated
+with check (owner_id = auth.uid());
+
+drop policy if exists tasks_update_owner on public.tasks;
+create policy tasks_update_owner
+on public.tasks
+for update
+to authenticated
+using (owner_id = auth.uid())
+with check (owner_id = auth.uid());
+
+drop policy if exists tasks_delete_owner on public.tasks;
+create policy tasks_delete_owner
+on public.tasks
+for delete
+to authenticated
+using (owner_id = auth.uid());
+
+-- ---- weekly_check_ins ----
+drop policy if exists weekly_check_ins_select_participant on public.weekly_check_ins;
+create policy weekly_check_ins_select_participant
+on public.weekly_check_ins
+for select
+to authenticated
+using (
+  owner_id = auth.uid()
+  or exists (
+    select 1
+    from public.friendships f
+    where (f.user_low_id = auth.uid() and f.user_high_id = weekly_check_ins.owner_id)
+       or (f.user_high_id = auth.uid() and f.user_low_id = weekly_check_ins.owner_id)
+  )
+);
+
+drop policy if exists weekly_check_ins_insert_owner on public.weekly_check_ins;
+create policy weekly_check_ins_insert_owner
+on public.weekly_check_ins
+for insert
+to authenticated
+with check (owner_id = auth.uid());
+
+drop policy if exists weekly_check_ins_update_owner on public.weekly_check_ins;
+create policy weekly_check_ins_update_owner
+on public.weekly_check_ins
+for update
+to authenticated
+using (owner_id = auth.uid())
+with check (owner_id = auth.uid());
+
+-- ---- pokes ----
+drop policy if exists pokes_select_participant on public.pokes;
+create policy pokes_select_participant
+on public.pokes
+for select
+to authenticated
+using (
+  sender_user_id = auth.uid() or recipient_user_id = auth.uid()
+);
+
+drop policy if exists pokes_insert_sender on public.pokes;
+create policy pokes_insert_sender
+on public.pokes
+for insert
+to authenticated
+with check (
+  sender_user_id = auth.uid()
+  and recipient_user_id <> auth.uid()
+  and status = 'pending'
+);
+
+drop policy if exists pokes_update_recipient_response on public.pokes;
+create policy pokes_update_recipient_response
+on public.pokes
+for update
+to authenticated
+using (recipient_user_id = auth.uid())
+with check (
+  recipient_user_id = auth.uid()
+  and status in ('on_it', 'later')
+);
