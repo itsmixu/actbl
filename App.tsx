@@ -7,20 +7,11 @@ import { AuthProvider } from './src/context/AuthContext';
 import { supabase } from './src/lib/supabase';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
-/**
- * Handle Supabase magic-link callbacks. When a user taps the link in their
- * email, the OS reopens the app with a URL like:
- *   actbl://auth/callback#access_token=...&refresh_token=...
- * We extract those tokens and hand them to Supabase to establish the session.
- */
-async function handleAuthDeepLink(url: string) {
+async function handleOAuthCallback(url: string) {
   try {
     const parsed = Linking.parse(url);
     if (!parsed.path?.includes('auth/callback')) return;
 
-    // Tokens may arrive either as query params or as URL fragment params,
-    // depending on the email template. Linking.parse normalizes the query
-    // params; for the hash fragment we have to parse manually.
     let accessToken =
       typeof parsed.queryParams?.access_token === 'string'
         ? parsed.queryParams.access_token
@@ -40,33 +31,21 @@ async function handleAuthDeepLink(url: string) {
     }
 
     if (accessToken && refreshToken) {
-      await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
+      await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
     }
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn('[auth] deep-link handling failed', err);
+    console.warn('[auth] OAuth callback handling failed', err);
   }
 }
 
-function DeepLinkHandler() {
+function OAuthCallbackHandler() {
   useEffect(() => {
-    // Handle the URL the app was launched with, if any.
     void Linking.getInitialURL().then((url) => {
-      if (url) void handleAuthDeepLink(url);
+      if (url) void handleOAuthCallback(url);
     });
-
-    const sub = Linking.addEventListener('url', ({ url }) => {
-      void handleAuthDeepLink(url);
-    });
-
-    return () => {
-      sub.remove();
-    };
+    const sub = Linking.addEventListener('url', ({ url }) => void handleOAuthCallback(url));
+    return () => sub.remove();
   }, []);
-
   return null;
 }
 
@@ -75,7 +54,7 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <AppProvider>
-          <DeepLinkHandler />
+          <OAuthCallbackHandler />
           <AppNavigator />
         </AppProvider>
       </AuthProvider>

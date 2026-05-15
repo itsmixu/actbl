@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,9 +19,9 @@ import { useAppContext } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { getThemeColors, radius, space, text } from '../theme/theme';
 
-type Stage = 'email' | 'otp';
+WebBrowser.maybeCompleteAuthSession();
 
-const REDIRECT_URL = Linking.createURL('auth/callback');
+type Stage = 'email' | 'otp';
 
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -37,8 +38,45 @@ export function SignInScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  async function handleSendLink() {
+  async function handleGoogleSignIn() {
+    setError('');
+    setIsGoogleLoading(true);
+    const redirectTo = Linking.createURL('auth/callback');
+    const { data, error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        skipBrowserRedirect: true,
+      },
+    });
+    if (err || !data.url) {
+      setError(err?.message ?? 'Could not start Google sign-in.');
+      setIsGoogleLoading(false);
+      return;
+    }
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    setIsGoogleLoading(false);
+    if (result.type === 'success') {
+      const parsed = Linking.parse(result.url);
+      const accessToken =
+        typeof parsed.queryParams?.access_token === 'string'
+          ? parsed.queryParams.access_token
+          : null;
+      const refreshToken =
+        typeof parsed.queryParams?.refresh_token === 'string'
+          ? parsed.queryParams.refresh_token
+          : null;
+      if (accessToken && refreshToken) {
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+      } else {
+        setError('Sign-in failed. Please try again.');
+      }
+    }
+  }
+
+  async function handleSendCode() {
     setError('');
     setInfo('');
     const clean = email.trim().toLowerCase();
@@ -50,7 +88,6 @@ export function SignInScreen() {
     const { error: err } = await supabase.auth.signInWithOtp({
       email: clean,
       options: {
-        emailRedirectTo: REDIRECT_URL,
         shouldCreateUser: true,
       },
     });
@@ -61,7 +98,7 @@ export function SignInScreen() {
     }
     setEmail(clean);
     setStage('otp');
-    setInfo('Check your inbox for a link or 6-digit code.');
+    setInfo('Check your inbox for a 6-digit code.');
   }
 
   async function handleVerifyOtp() {
@@ -93,7 +130,6 @@ export function SignInScreen() {
     const { error: err } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: REDIRECT_URL,
         shouldCreateUser: true,
       },
     });
@@ -133,7 +169,7 @@ export function SignInScreen() {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Sign in</Text>
               <Text style={styles.cardBody}>
-                We'll email you a magic link and a 6-digit code. No password to remember.
+                Enter your email and we'll send you a 6-digit code. No password to remember.
               </Text>
               <TextInput
                 value={email}
@@ -152,13 +188,13 @@ export function SignInScreen() {
                 editable={!isLoading}
                 returnKeyType="send"
                 onSubmitEditing={() => {
-                  void handleSendLink();
+                  void handleSendCode();
                 }}
               />
               {error ? <Text style={styles.errorText}>{error}</Text> : null}
               <Pressable
                 onPress={() => {
-                  void handleSendLink();
+                  void handleSendCode();
                 }}
                 style={({ pressed }) => [
                   styles.primaryButton,
@@ -172,7 +208,33 @@ export function SignInScreen() {
                 ) : (
                   <>
                     <Ionicons name="mail-outline" size={18} color={c.brandText} />
-                    <Text style={styles.primaryButtonText}>Send magic link</Text>
+                    <Text style={styles.primaryButtonText}>Send code</Text>
+                  </>
+                )}
+              </Pressable>
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              <Pressable
+                onPress={() => {
+                  void handleGoogleSignIn();
+                }}
+                style={({ pressed }) => [
+                  styles.googleButton,
+                  pressed && styles.googleButtonPressed,
+                  isGoogleLoading && styles.primaryButtonDisabled,
+                ]}
+                disabled={isGoogleLoading || isLoading}
+              >
+                {isGoogleLoading ? (
+                  <ActivityIndicator color={c.textPrimary} />
+                ) : (
+                  <>
+                    <Ionicons name="logo-google" size={18} color={c.textPrimary} />
+                    <Text style={styles.googleButtonText}>Continue with Google</Text>
                   </>
                 )}
               </Pressable>
@@ -190,7 +252,7 @@ export function SignInScreen() {
 
               <Text style={styles.cardTitle}>Check your email</Text>
               <Text style={styles.cardBody}>
-                We sent a link and a 6-digit code to{'\n'}
+                We sent a 6-digit code to{'\n'}
                 <Text style={styles.emphasized}>{email}</Text>
               </Text>
 
@@ -367,6 +429,38 @@ function createStyles(c: ReturnType<typeof getThemeColors>) {
     resendText: {
       ...text.bodyUiBold,
       color: c.textSecondary,
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: space.sm,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: c.border,
+    },
+    dividerText: {
+      ...text.caption,
+      color: c.textTertiary,
+    },
+    googleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: space.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.pill,
+      paddingVertical: space.base,
+    },
+    googleButtonPressed: {
+      opacity: 0.8,
+    },
+    googleButtonText: {
+      ...text.bodyUiBold,
+      color: c.textPrimary,
     },
     backRow: {
       flexDirection: 'row',
